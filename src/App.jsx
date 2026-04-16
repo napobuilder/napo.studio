@@ -26,37 +26,6 @@ export default function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // --- SEO & META TAGS ESTRATÉGICOS ---
-  useEffect(() => {
-    document.title = "Napbak | Creative Developer & Music Producer";
-    
-    const setMetaTag = (name, content, attribute = "name") => {
-      let element = document.querySelector(`meta[${attribute}="${name}"]`);
-      if (!element) {
-        element = document.createElement('meta');
-        element.setAttribute(attribute, name);
-        document.head.appendChild(element);
-      }
-      element.setAttribute('content', content);
-    };
-
-    setMetaTag('description', 'Interactive audio portfolio of Napbak. Sound designer, creative developer, and music producer crafting immersive digital experiences and modern sonic landscapes.');
-    setMetaTag('keywords', 'Napbak, creative developer, productor musical creativo, interactive web audio, sound design portfolio, immersive website, web interactiva, latin america, tech and music');
-    setMetaTag('author', 'Napbak Studio');
-    setMetaTag('theme-color', '#050505');
-    
-    setMetaTag('og:type', 'website', 'property');
-    setMetaTag('og:title', 'Napbak | Creative Developer & Sound Designer', 'property');
-    setMetaTag('og:description', 'I build immersive sonic landscapes where technology meets raw emotion.', 'property');
-    setMetaTag('og:image', 'https://i.imgur.com/39HXelI.png', 'property');
-    setMetaTag('og:url', 'https://napbak.studio', 'property');
-
-    setMetaTag('twitter:card', 'summary_large_image');
-    setMetaTag('twitter:title', 'Napbak | Creative Developer & Music Producer');
-    setMetaTag('twitter:description', 'Crafting immersive sonic landscapes where technology meets raw emotion.');
-    setMetaTag('twitter:image', 'https://i.imgur.com/39HXelI.png');
-  }, []);
-
   const [trackStates, setTrackStates] = useState({
     ether: false,
     bass: false,
