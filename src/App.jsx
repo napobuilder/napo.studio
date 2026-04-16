@@ -1057,7 +1057,7 @@ export default function App() {
           <div className="flex flex-col items-center gap-6 mt-8">
             <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase">Or reach out via</p>
             <div className="flex gap-4 md:gap-8">
-              <a href="https://wa.me/1234567890" target="_blank" rel="noreferrer" className="border border-white/20 px-6 py-3 rounded-full text-[10px] tracking-widest uppercase hover:bg-white hover:text-black transition-all">
+              <a href="https://wa.me/5804121479466" target="_blank" rel="noreferrer" className="border border-white/20 px-6 py-3 rounded-full text-[10px] tracking-widest uppercase hover:bg-white hover:text-black transition-all">
                 WhatsApp
               </a>
               <a href="https://www.instagram.com/napbak.studio" target="_blank" rel="noreferrer" className="border border-white/20 px-6 py-3 rounded-full text-[10px] tracking-widest uppercase hover:bg-white hover:text-black transition-all">
