@@ -100,10 +100,10 @@ export default function App() {
         }
 
         const urls = {
-          ether: '/audio/stem_atmosphere.ogg',
-          bass: '/audio/stem_subbass.ogg',
-          arp: '/audio/stem_syntharp.ogg',
-          drums: '/audio/stem_percussion.ogg'
+          ether: '/audio/stem_atmosphere.wav',
+          bass: '/audio/stem_subbass.wav',
+          arp: '/audio/stem_syntharp.wav',
+          drums: '/audio/stem_percussion.wav'
         };
 
         let loadedCount = 0;
@@ -112,8 +112,17 @@ export default function App() {
         for (const [id, url] of Object.entries(urls)) {
           const response = await fetch(url);
           const arrayBuffer = await response.arrayBuffer();
-          // Decodificamos el audio a la memoria RAM del dispositivo
-          const audioBuffer = await globalAudioCtx.decodeAudioData(arrayBuffer);
+          
+          // FIX SAFARI/iOS: Safari falla a veces con la sintaxis de Promesa directa.
+          // Usamos el sistema de callback envuelto en una Promesa manual para compatibilidad total.
+          const audioBuffer = await new Promise((resolve, reject) => {
+            globalAudioCtx.decodeAudioData(
+              arrayBuffer,
+              (buffer) => resolve(buffer),
+              (err) => reject(err)
+            );
+          });
+
           globalAudioBuffers[id] = audioBuffer;
           loadedCount++;
           setLoadingProgress(Math.round((loadedCount / total) * 100));
@@ -136,7 +145,7 @@ export default function App() {
       tag: "Alt R&B",
       cover: "https://i.imgur.com/n6RZIwH.jpeg",
       spotifyUrl: "https://open.spotify.com/intl-es/track/2hQIbXr0WIr8Rpwz2UHHMv",
-      snippetUrl: "/audio/snippet_here_with_me.ogg" 
+      snippetUrl: "/audio/snippet_here_with_me.mp3" 
     },
     { 
       id: 'gangsta',
@@ -145,7 +154,7 @@ export default function App() {
       tag: "Dark R&B",
       cover: "https://i.imgur.com/SoNPdjY.jpeg",
       spotifyUrl: "https://open.spotify.com/intl-es/track/4i6lvmArvdt9t2vRiskHN7",
-      snippetUrl: "/audio/snippet_gangsta.ogg"
+      snippetUrl: "/audio/snippet_gangsta.mp3"
     },
     { 
       id: 'narcotics',
@@ -154,7 +163,7 @@ export default function App() {
       tag: "Dark Electronic",
       cover: "https://i.imgur.com/gKpPX4s.jpeg",
       spotifyUrl: "https://open.spotify.com/intl-es/track/0wnO2GjTLEgAP9LFGeJ0KL",
-      snippetUrl: "/audio/snippet_narcotics.ogg"
+      snippetUrl: "/audio/snippet_narcotics.mp3"
     },
   ];
 
@@ -415,6 +424,13 @@ export default function App() {
       await globalAudioCtx.resume();
     }
 
+    // FIX iOS: Unlock Hack - Reproducir un buffer silencioso para forzar el hardware
+    const silentBuffer = globalAudioCtx.createBuffer(1, 1, 22050);
+    const dummySource = globalAudioCtx.createBufferSource();
+    dummySource.buffer = silentBuffer;
+    dummySource.connect(globalAudioCtx.destination);
+    dummySource.start(0);
+
     // Configurar grabadora
     globalRecChunks = [];
     const mimeType = [
@@ -443,7 +459,7 @@ export default function App() {
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
 
     // DISPARO SIMULTÁNEO: Todos los audios inician exactamente en el mismo milisegundo
-    const startTime = globalAudioCtx.currentTime + 0.1; // 100ms de margen para el procesador
+    const startTime = globalAudioCtx.currentTime + 0.15; // 150ms de margen para procesadores lentos
     
     ['ether', 'bass', 'arp', 'drums'].forEach(id => {
       if (globalAudioBuffers[id]) {
@@ -564,7 +580,7 @@ export default function App() {
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
     
     // Disparo Simultáneo otra vez
-    const startTime = globalAudioCtx.currentTime + 0.1;
+    const startTime = globalAudioCtx.currentTime + 0.15;
     ['ether', 'bass', 'arp', 'drums'].forEach(id => {
       if (globalTrackGains[id]) {
         globalTrackGains[id].gain.value = id === 'ether' ? 1 : 0;
