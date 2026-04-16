@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import lamejs from 'lamejs';
 
-let globalAudioCtx = null;
-let globalMasterProcessor = null;
-let globalSourceNodes = {};
-let globalMp3Encoder = null;
-let globalMp3Chunks = [];
-let isRecordingGlobal = false;
+// ── Globals del sistema de audio ────────────────────────────────────────────
+let globalAudioCtx      = null;
+let globalMasterGain    = null;   // nodo central: fuentes → aquí → speakers + grabación
+let globalStreamDest    = null;   // MediaStreamDestination (tap de grabación)
+let globalMediaRecorder = null;   // MediaRecorder nativo del browser
+let globalRecChunks     = [];     // chunks de audio capturados
+let globalSourceNodes   = {};     // MediaElementSources ya creados (no repetir)
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -358,63 +358,64 @@ export default function App() {
     document.body.removeChild(textArea);
   };
 
+  // ── Sistema de audio con MediaRecorder nativo ──────────────────────────
   const initAudioSystem = () => {
     try {
+      // 1. Crear AudioContext una sola vez
       if (!globalAudioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        globalAudioCtx = new AudioContext();
-        
-        globalMasterProcessor = globalAudioCtx.createScriptProcessor(4096, 2, 2);
-        
-        globalMasterProcessor.onaudioprocess = (e) => {
-          if (!isRecordingGlobal || !globalMp3Encoder) return;
-          
-          const left = e.inputBuffer.getChannelData(0);
-          const right = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : left;
-          const len = left.length;
-          
-          const leftInt16 = new Int16Array(len);
-          const rightInt16 = new Int16Array(len);
-          
-          for (let i = 0; i < len; i++) {
-             leftInt16[i] = left[i] < 0 ? left[i] * 32768 : left[i] * 32767;
-             rightInt16[i] = right[i] < 0 ? right[i] * 32768 : right[i] * 32767;
-          }
-  
-          try {
-            const buf = globalMp3Encoder.encodeBuffer(leftInt16, rightInt16);
-            if (buf.length > 0) globalMp3Chunks.push(new Int8Array(buf));
-          } catch(err) { 
-            console.error("LameJS Error", err); 
-          }
-        };
+        const AC = window.AudioContext || window.webkitAudioContext;
+        globalAudioCtx = new AC();
 
-        globalMasterProcessor.connect(globalAudioCtx.destination);
+        // MasterGain → todo pasa por aquí
+        globalMasterGain = globalAudioCtx.createGain();
+        globalMasterGain.gain.value = 1;
+
+        // Rama 1: speakers
+        globalMasterGain.connect(globalAudioCtx.destination);
+
+        // Rama 2: grabación via MediaStreamDestination
+        globalStreamDest = globalAudioCtx.createMediaStreamDestination();
+        globalMasterGain.connect(globalStreamDest);
       }
 
+      // 2. Resumir si está suspendido
       if (globalAudioCtx.state === 'suspended') {
         globalAudioCtx.resume();
       }
 
+      // 3. Envolver cada <audio> como MediaElementSource (solo una vez por elemento)
       const refs = [etherRef, bassRef, arpRef, drumRef];
       refs.forEach(ref => {
-        if (ref.current && !globalSourceNodes[ref.current.currentSrc]) {
+        if (ref.current && !globalSourceNodes[ref.current.src]) {
           const source = globalAudioCtx.createMediaElementSource(ref.current);
-          source.connect(globalAudioCtx.destination);
-          source.connect(globalMasterProcessor);
-          globalSourceNodes[ref.current.currentSrc] = source;
+          source.connect(globalMasterGain);
+          globalSourceNodes[ref.current.src] = source;
         }
       });
 
-      if (!globalMp3Encoder) {
-         globalMp3Encoder = new lamejs.Mp3Encoder(2, globalAudioCtx.sampleRate || 44100, 128);
-      }
-      globalMp3Chunks = [];
-      isRecordingGlobal = true;
+      // 4. Arrancar MediaRecorder nuevo para esta sesión
+      globalRecChunks = [];
+      const mimeType = [
+        'audio/ogg;codecs=opus',
+        'audio/ogg',
+        'audio/webm;codecs=opus',
+        'audio/webm',
+      ].find(t => MediaRecorder.isTypeSupported(t)) || '';
+
+      globalMediaRecorder = new MediaRecorder(
+        globalStreamDest.stream,
+        mimeType ? { mimeType } : {}
+      );
+
+      globalMediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) globalRecChunks.push(e.data);
+      };
+
+      globalMediaRecorder.start(500); // chunk cada 500ms
       setIsRecording(true);
 
-    } catch(err) {
-      console.error("Audio Initialization Error:", err);
+    } catch (err) {
+      console.error('Audio Init Error:', err);
       setIsRecording(true);
     }
   };
@@ -451,69 +452,88 @@ export default function App() {
   const handlePause = () => {
     const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
     if (isPaused) {
+      // Reanudar
       tracks.forEach(track => track && track.play());
       if (globalAudioCtx) globalAudioCtx.resume();
-      isRecordingGlobal = true;
+      if (globalMediaRecorder && globalMediaRecorder.state === 'paused') {
+        globalMediaRecorder.resume();
+      }
       setIsPaused(false);
-
       if (activeSnippet) {
         if (snippetAudioRef.current) snippetAudioRef.current.pause();
         setActiveSnippet(null);
       }
-
     } else {
+      // Pausar
       tracks.forEach(track => track && track.pause());
       if (globalAudioCtx) globalAudioCtx.suspend();
-      isRecordingGlobal = false;
+      if (globalMediaRecorder && globalMediaRecorder.state === 'recording') {
+        globalMediaRecorder.pause();
+      }
       setIsPaused(true);
     }
   };
 
   const handleStopAndSave = () => {
     setIsRecording(false);
-    isRecordingGlobal = false;
 
-    if (globalMp3Encoder) {
-      try {
-        const mp3buf = globalMp3Encoder.flush();
-        if (mp3buf.length > 0) globalMp3Chunks.push(new Int8Array(mp3buf));
-        
-        if (globalMp3Chunks.length > 0) {
-          const blob = new Blob(globalMp3Chunks, { type: 'audio/mp3' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `napbak-session-${Date.now()}.mp3`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        } else {
-          console.warn("No audio data recorded.");
-        }
-      } catch(err) {
-        console.error("Export Error:", err);
-      }
-      globalMp3Chunks = [];
-      globalMp3Encoder = null; // Next session will recreate it to avoid corrupted mp3 headers
-    }
-
+    // Parar todos los stems
     const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
     tracks.forEach(track => {
-      if (track) {
-        track.pause();
-        track.currentTime = 0;
-      }
+      if (track) { track.pause(); track.currentTime = 0; }
     });
 
-    setHasSaved(true);
+    if (!globalMediaRecorder) {
+      console.warn('No hay grabadora activa.');
+      setHasSaved(true);
+      return;
+    }
+
+    // Cuando MediaRecorder termina, dispara onstop con todos los chunks listos
+    globalMediaRecorder.onstop = () => {
+      if (globalRecChunks.length === 0) {
+        console.warn('No se grabaron datos de audio.');
+        setHasSaved(true);
+        return;
+      }
+      const mimeType = globalRecChunks[0]?.type || 'audio/ogg';
+      const blob = new Blob(globalRecChunks, { type: mimeType });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `napbak-session-${Date.now()}.ogg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+      globalRecChunks    = [];
+      globalMediaRecorder = null;
+      setHasSaved(true);
+    };
+
+    // Pedir el último chunk y detener
+    if (globalMediaRecorder.state !== 'inactive') {
+      globalMediaRecorder.requestData();
+      globalMediaRecorder.stop();
+    } else {
+      setHasSaved(true);
+    }
   };
 
   const handleReset = () => {
     setTime(0);
     setHasSaved(false);
     setIsPaused(false);
-    
+
+    // Limpiar cualquier recorder residual antes de la nueva sesión
+    if (globalMediaRecorder && globalMediaRecorder.state !== 'inactive') {
+      globalMediaRecorder.onstop = null; // evitar que dispare un download inesperado
+      globalMediaRecorder.stop();
+    }
+    globalMediaRecorder = null;
+    globalRecChunks = [];
+
     const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
     tracks.forEach(track => {
       if (track) {
