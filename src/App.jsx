@@ -6,7 +6,8 @@ let globalMasterGain    = null;   // nodo central: fuentes → aquí → speaker
 let globalStreamDest    = null;   // MediaStreamDestination (tap de grabación)
 let globalMediaRecorder = null;   // MediaRecorder nativo del browser
 let globalRecChunks     = [];     // chunks de audio capturados
-let globalSourceNodes   = {};     // MediaElementSources ya creados (no repetir)
+let globalSourceNodes   = {};     // MediaElementSources ya creados
+let globalTrackGains    = {};     // <-- FIX iOS: Nodos de volumen individuales por pista
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -127,7 +128,7 @@ export default function App() {
       const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
       tracks.forEach(track => track && track.pause());
       if (globalAudioCtx) globalAudioCtx.suspend();
-      isRecordingGlobal = false;
+      if (globalMediaRecorder && globalMediaRecorder.state === "recording") globalMediaRecorder.pause();
       setIsPaused(true);
     }
   };
@@ -391,13 +392,21 @@ export default function App() {
       dummySource.connect(globalAudioCtx.destination);
       dummySource.start(0);
 
-      // 3. Envolver cada <audio> como MediaElementSource (solo una vez por elemento)
-      const refs = [etherRef, bassRef, arpRef, drumRef];
-      refs.forEach(ref => {
-        if (ref.current && !globalSourceNodes[ref.current.src]) {
+      // FIX PARA iOS: Envolver cada <audio> en su propio GainNode
+      const refMap = { ether: etherRef, bass: bassRef, arp: arpRef, drums: drumRef };
+      Object.entries(refMap).forEach(([id, ref]) => {
+        if (ref.current && !globalSourceNodes[id]) {
           const source = globalAudioCtx.createMediaElementSource(ref.current);
-          source.connect(globalMasterGain);
-          globalSourceNodes[ref.current.src] = source;
+          const gainNode = globalAudioCtx.createGain();
+          
+          // La ganancia inicial depende del estado actual 
+          gainNode.gain.value = trackStatesRef.current[id] ? 1 : 0;
+          
+          source.connect(gainNode);
+          gainNode.connect(globalMasterGain);
+          
+          globalSourceNodes[id] = source;
+          globalTrackGains[id] = gainNode;
         }
       });
 
@@ -440,16 +449,23 @@ export default function App() {
     tracks.forEach(track => {
       if (track) {
         track.volume = 0;
-        track.muted = true;
+        track.muted = true; // <-- FIX MÓVIL
         track.play().catch(e => console.log("Audio play failed:", e));
       }
     });
 
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
+    
     if (etherRef.current) {
       etherRef.current.volume = 1;
-      etherRef.current.muted = false;
+      etherRef.current.muted = false; // <-- FIX MÓVIL
     }
+    
+    // Aseguramos las ganancias en el motor Web Audio (FIX MÓVIL)
+    if (globalTrackGains['ether']) globalTrackGains['ether'].gain.value = 1;
+    ['bass', 'arp', 'drums'].forEach(id => {
+      if (globalTrackGains[id]) globalTrackGains[id].gain.value = 0;
+    });
   };
 
   const toggleTrack = (trackId) => {
@@ -458,10 +474,17 @@ export default function App() {
       const refMap = { ether: etherRef, bass: bassRef, arp: arpRef, drums: drumRef };
       const trackRef = refMap[trackId];
       
+      // Control de estado nativo HTML (fallback)
       if (trackRef && trackRef.current) {
         trackRef.current.volume = newState ? 1 : 0;
-        trackRef.current.muted = !newState;
+        trackRef.current.muted = !newState; // <-- FIX MÓVIL
       }
+      
+      // Control de volumen Web Audio API (El FIX definitivo para iOS)
+      if (globalTrackGains[trackId] && globalAudioCtx) {
+        globalTrackGains[trackId].gain.setTargetAtTime(newState ? 1 : 0, globalAudioCtx.currentTime, 0.05);
+      }
+      
       return { ...prev, [trackId]: newState };
     });
   };
@@ -559,16 +582,22 @@ export default function App() {
       if (track) {
         track.currentTime = 0;
         track.volume = 0;
-        track.muted = true;
+        track.muted = true; // <-- FIX MÓVIL
         track.play().catch(e => console.log("Audio play failed:", e));
       }
     });
 
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
+    
     if (etherRef.current) {
       etherRef.current.volume = 1;
-      etherRef.current.muted = false;
+      etherRef.current.muted = false; // <-- FIX MÓVIL
     }
+    
+    if (globalTrackGains['ether']) globalTrackGains['ether'].gain.value = 1;
+    ['bass', 'arp', 'drums'].forEach(id => {
+      if (globalTrackGains[id]) globalTrackGains[id].gain.value = 0;
+    });
   };
 
   const stemsConfig = [
@@ -580,6 +609,53 @@ export default function App() {
 
   return (
     <div className={`bg-[#050505] text-[#9ca3af] font-mono selection:bg-[#9D4EDD] selection:text-white min-h-screen relative scroll-smooth ${isPaused ? 'paused-state' : ''}`}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@100;400;700&family=Outfit:wght@100;300;400;700&display=swap');
+        
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-modern { font-family: 'Outfit', sans-serif; }
+        .font-serif { font-family: 'Instrument Serif', serif; }
+        
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        ${isDotStolen ? `
+        @media (pointer: fine) {
+          body, a, button, input, .dot-slot { cursor: none !important; }
+        }
+        ` : ''}
+        
+        .noise-overlay {
+          position: fixed;
+          inset: 0;
+          opacity: 0.03;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+          pointer-events: none;
+          z-index: 50;
+        }
+
+        .pad-unpressed {
+          box-shadow: inset 0 1px 1px rgba(255,255,255,0.08), 0 10px 20px rgba(0,0,0,0.4);
+        }
+        .pad-pressed {
+          box-shadow: inset 0 4px 15px rgba(0,0,0,0.8), inset 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .bar-anim { animation: pulse-height 1s ease-in-out infinite alternate; }
+        @keyframes pulse-height {
+          0% { transform: scaleY(0.3); opacity: 0.5; }
+          100% { transform: scaleY(1); opacity: 1; }
+        }
+        .paused-state .bar-anim { animation-play-state: paused; }
+        .paused-state canvas { opacity: 0.3 !important; transition: opacity 1s; }
+
+        .eq-bar {
+          animation: eq-bounce 0.6s ease-in-out infinite alternate;
+        }
+        @keyframes eq-bounce {
+          0% { transform: scaleY(0.3); }
+          100% { transform: scaleY(1); }
+        }
+      `}</style>
       <audio 
         ref={snippetAudioRef} 
         onEnded={() => setActiveSnippet(null)} 
