@@ -100,33 +100,36 @@ export default function App() {
         }
 
         const urls = {
-          ether: '/audio/stem_atmosphere.wav',
-          bass: '/audio/stem_subbass.wav',
-          arp: '/audio/stem_syntharp.wav',
-          drums: '/audio/stem_percussion.wav'
+          ether: '/audio/stem_atmosphere.m4a',
+          bass: '/audio/stem_subbass.m4a',
+          arp: '/audio/stem_syntharp.m4a',
+          drums: '/audio/stem_percussion.m4a'
         };
 
+        const stemIds = Object.keys(urls);
         let loadedCount = 0;
-        const total = Object.keys(urls).length;
 
-        for (const [id, url] of Object.entries(urls)) {
-          const response = await fetch(url);
-          const arrayBuffer = await response.arrayBuffer();
-          
-          // FIX SAFARI/iOS: Safari falla a veces con la sintaxis de Promesa directa.
-          // Usamos el sistema de callback envuelto en una Promesa manual para compatibilidad total.
-          const audioBuffer = await new Promise((resolve, reject) => {
-            globalAudioCtx.decodeAudioData(
-              arrayBuffer,
-              (buffer) => resolve(buffer),
-              (err) => reject(err)
-            );
-          });
+        // CARGA EN PARALELO: Descargamos y decodificamos todos los archivos a la vez
+        await Promise.all(stemIds.map(async (id) => {
+          try {
+            const response = await fetch(urls[id]);
+            const arrayBuffer = await response.arrayBuffer();
+            
+            const audioBuffer = await new Promise((resolve, reject) => {
+              globalAudioCtx.decodeAudioData(
+                arrayBuffer,
+                (buffer) => resolve(buffer),
+                (err) => reject(err)
+              );
+            });
 
-          globalAudioBuffers[id] = audioBuffer;
-          loadedCount++;
-          setLoadingProgress(Math.round((loadedCount / total) * 100));
-        }
+            globalAudioBuffers[id] = audioBuffer;
+            loadedCount++;
+            setLoadingProgress(Math.round((loadedCount / stemIds.length) * 100));
+          } catch (err) {
+            console.error(`Error loading ${id}:`, err);
+          }
+        }));
         
         setIsLoaded(true);
       } catch (error) {
