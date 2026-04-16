@@ -578,10 +578,10 @@ export default function App() {
         ></div>
       </div>
 
-      <audio ref={etherRef} src="/audio/stem_atmosphere.ogg" crossOrigin="anonymous" loop />
-      <audio ref={bassRef} src="/audio/stem_subbass.ogg" crossOrigin="anonymous" loop />
-      <audio ref={arpRef} src="/audio/stem_syntharp.ogg" crossOrigin="anonymous" loop />
-      <audio ref={drumRef} src="/audio/stem_percussion.ogg" crossOrigin="anonymous" loop />
+      <audio ref={etherRef} src="/audio/stem_atmosphere.ogg" playsInline preload="auto" loop />
+      <audio ref={bassRef} src="/audio/stem_subbass.ogg" playsInline preload="auto" loop />
+      <audio ref={arpRef} src="/audio/stem_syntharp.ogg" playsInline preload="auto" loop />
+      <audio ref={drumRef} src="/audio/stem_percussion.ogg" playsInline preload="auto" loop />
 
       <canvas 
         ref={canvasRef}
