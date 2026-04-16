@@ -113,8 +113,7 @@ export default function App() {
           const response = await fetch(url);
           const arrayBuffer = await response.arrayBuffer();
           
-          // FIX SAFARI/iOS: Safari falla a veces con la sintaxis de Promesa directa.
-          // Usamos el sistema de callback envuelto en una Promesa manual para compatibilidad total.
+          // FIX SAFARI/iOS: Usamos callbacks manuales en decodeAudioData para máxima compatibilidad
           const audioBuffer = await new Promise((resolve, reject) => {
             globalAudioCtx.decodeAudioData(
               arrayBuffer,
@@ -137,6 +136,7 @@ export default function App() {
 
     loadAudioAssets();
   }, []);
+
   const works = [
     { 
       id: 'here-with-me',
@@ -416,23 +416,24 @@ export default function App() {
   };
 
   // ── 2. INICIO Y DISPARO SIMULTÁNEO (SYNC MÓVIL PERFECTO) ──────────
+  
+  // FIX: ELIMINADA LA PALABRA "async" PARA GARANTIZAR QUE SAFARI NO PIERDA EL GESTURE TOKEN
   const handleEnter = () => {
     if (!isLoaded) return;
     setHasEntered(true);
     
-    // FIX SAFARI/iOS: Sincronismo total. Quitamos async/await para que el resume ocurra 
-    // exactamente en el mismo milisegundo del toque del usuario.
+    // FIX: ELIMINADA LA PALABRA "await" PARA EVITAR LA PAUSA EN EL HILO PRINCIPAL
     if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
       globalAudioCtx.resume();
     }
 
-    // FIX iOS: Unlock Hack - Reproducir un buffer silencioso para forzar el hardware
+    // FIX iOS: Unlock Hack - Reproducir un buffer silencioso para encender la tarjeta de audio
     if (globalAudioCtx) {
-      const silentBuffer = globalAudioCtx.createBuffer(1, 1, 22050);
-      const dummySource = globalAudioCtx.createBufferSource();
-      dummySource.buffer = silentBuffer;
-      dummySource.connect(globalAudioCtx.destination);
-      dummySource.start(0);
+        const silentBuffer = globalAudioCtx.createBuffer(1, 1, 22050);
+        const dummySource = globalAudioCtx.createBufferSource();
+        dummySource.buffer = silentBuffer;
+        dummySource.connect(globalAudioCtx.destination);
+        dummySource.start(0);
     }
 
     // Configurar grabadora de forma segura
@@ -444,19 +445,19 @@ export default function App() {
 
     try {
       if (window.MediaRecorder) {
-        globalMediaRecorder = new MediaRecorder(globalStreamDest.stream, mimeType ? { mimeType } : {});
-        globalMediaRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) globalRecChunks.push(e.data);
-        };
-        globalMediaRecorder.start(500); 
-        setIsRecording(true);
+          globalMediaRecorder = new MediaRecorder(globalStreamDest.stream, mimeType ? { mimeType } : {});
+          globalMediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) globalRecChunks.push(e.data);
+          };
+          globalMediaRecorder.start(500); 
+          setIsRecording(true);
       }
     } catch(err) {
       console.error("No recorder:", err);
       setIsRecording(true); // Permitimos que la UI siga aunque no grabe
     }
 
-    // Resetear las ganancias (Solo Ether activo al inicio con setValueAtTime por seguridad iOS)
+    // Resetear las ganancias (Solo Ether activo al inicio con setTargetAtTime por seguridad iOS)
     ['ether', 'bass', 'arp', 'drums'].forEach(id => {
       if (globalTrackGains[id]) {
         globalTrackGains[id].gain.setValueAtTime(id === 'ether' ? 1 : 0, globalAudioCtx.currentTime);
@@ -465,7 +466,7 @@ export default function App() {
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
 
     // DISPARO SIMULTÁNEO: Todos los audios inician exactamente en el mismo milisegundo
-    const startTime = globalAudioCtx.currentTime + 0.15; // 150ms de margen para procesadores lentos
+    const startTime = globalAudioCtx.currentTime + 0.15; // 150ms de margen
     
     ['ether', 'bass', 'arp', 'drums'].forEach(id => {
       if (globalAudioBuffers[id]) {
@@ -578,12 +579,12 @@ export default function App() {
 
     try {
       if (window.MediaRecorder) {
-        globalMediaRecorder = new MediaRecorder(globalStreamDest.stream, mimeType ? { mimeType } : {});
-        globalMediaRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) globalRecChunks.push(e.data);
-        };
-        globalMediaRecorder.start(500); 
-        setIsRecording(true);
+          globalMediaRecorder = new MediaRecorder(globalStreamDest.stream, mimeType ? { mimeType } : {});
+          globalMediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) globalRecChunks.push(e.data);
+          };
+          globalMediaRecorder.start(500); 
+          setIsRecording(true);
       }
     } catch(err) {
       setIsRecording(true);
@@ -667,11 +668,12 @@ export default function App() {
           100% { transform: scaleY(1); }
         }
       `}</style>
-      {/* Solo dejamos la etiqueta audio para los snippets que no requieren sincro */}
+      
       <audio 
         ref={snippetAudioRef} 
         onEnded={() => setActiveSnippet(null)} 
       />
+      
       <div 
         ref={cursorRef} 
         className={`hidden md:block fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference will-change-transform transition-opacity duration-300 ${isDotStolen ? 'opacity-100' : 'opacity-0'}`}
@@ -689,7 +691,6 @@ export default function App() {
 
       <div className="noise-overlay"></div>
 
-      {/* --- GATEKEEPER CON PORCENTAJE DE CARGA --- */}
       {!hasEntered && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505] transition-opacity duration-1000">
           <h1 className="font-modern text-4xl md:text-7xl text-white font-light tracking-tighter lowercase mb-12 drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] relative z-10">
