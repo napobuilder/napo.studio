@@ -378,10 +378,18 @@ export default function App() {
         globalMasterGain.connect(globalStreamDest);
       }
 
-      // 2. Resumir si está suspendido
+      // 2. Resumir si está suspendido y aplicar el "iOS Unlock Hack"
       if (globalAudioCtx.state === 'suspended') {
         globalAudioCtx.resume();
       }
+
+      // HACK PARA iOS MOBILES: El motor de audio a veces no arranca hardware
+      // con MediaElementSource. Tocar un buffer silencioso fuerza el encendido.
+      const buffer = globalAudioCtx.createBuffer(1, 1, 22050);
+      const dummySource = globalAudioCtx.createBufferSource();
+      dummySource.buffer = buffer;
+      dummySource.connect(globalAudioCtx.destination);
+      dummySource.start(0);
 
       // 3. Envolver cada <audio> como MediaElementSource (solo una vez por elemento)
       const refs = [etherRef, bassRef, arpRef, drumRef];
