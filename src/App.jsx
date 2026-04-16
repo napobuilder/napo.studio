@@ -440,12 +440,16 @@ export default function App() {
     tracks.forEach(track => {
       if (track) {
         track.volume = 0;
+        track.muted = true;
         track.play().catch(e => console.log("Audio play failed:", e));
       }
     });
 
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
-    if (etherRef.current) etherRef.current.volume = 1;
+    if (etherRef.current) {
+      etherRef.current.volume = 1;
+      etherRef.current.muted = false;
+    }
   };
 
   const toggleTrack = (trackId) => {
@@ -456,6 +460,7 @@ export default function App() {
       
       if (trackRef && trackRef.current) {
         trackRef.current.volume = newState ? 1 : 0;
+        trackRef.current.muted = !newState;
       }
       return { ...prev, [trackId]: newState };
     });
@@ -554,12 +559,16 @@ export default function App() {
       if (track) {
         track.currentTime = 0;
         track.volume = 0;
+        track.muted = true;
         track.play().catch(e => console.log("Audio play failed:", e));
       }
     });
 
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
-    if (etherRef.current) etherRef.current.volume = 1;
+    if (etherRef.current) {
+      etherRef.current.volume = 1;
+      etherRef.current.muted = false;
+    }
   };
 
   const stemsConfig = [
