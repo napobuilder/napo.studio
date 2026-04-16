@@ -76,6 +76,36 @@ export default function App() {
   const [activeSnippet, setActiveSnippet] = useState(null);
   const snippetAudioRef = useRef(null);
 
+  const works = [
+    { 
+      id: 'here-with-me',
+      title: "Here With Me", 
+      type: "Single / 2025", 
+      tag: "Alt R&B",
+      cover: "https://i.imgur.com/n6RZIwH.jpeg",
+      spotifyUrl: "https://open.spotify.com/intl-es/track/2hQIbXr0WIr8Rpwz2UHHMv",
+      snippetUrl: "/audio/snippet_here_with_me.ogg" 
+    },
+    { 
+      id: 'gangsta',
+      title: "Gangsta (Cover)", 
+      type: "Single / 2025", 
+      tag: "Dark R&B",
+      cover: "https://i.imgur.com/SoNPdjY.jpeg",
+      spotifyUrl: "https://open.spotify.com/intl-es/track/4i6lvmArvdt9t2vRiskHN7",
+      snippetUrl: "/audio/snippet_gangsta.ogg"
+    },
+    { 
+      id: 'narcotics',
+      title: "Narcotics", 
+      type: "Single / 2025", 
+      tag: "Dark Electronic",
+      cover: "https://i.imgur.com/gKpPX4s.jpeg",
+      spotifyUrl: "https://open.spotify.com/intl-es/track/0wnO2GjTLEgAP9LFGeJ0KL",
+      snippetUrl: "/audio/snippet_narcotics.ogg"
+    },
+  ];
+
   // ── 1. PRECARGA DE AUDIOS EN RAM (SYNC PERFECTO) ───────────────
   useEffect(() => {
     const loadAudioAssets = async () => {
@@ -128,35 +158,6 @@ export default function App() {
 
     loadAudioAssets();
   }, []);
-  const works = [
-    { 
-      id: 'here-with-me',
-      title: "Here With Me", 
-      type: "Single / 2025", 
-      tag: "Alt R&B",
-      cover: "https://i.imgur.com/n6RZIwH.jpeg",
-      spotifyUrl: "https://open.spotify.com/intl-es/track/2hQIbXr0WIr8Rpwz2UHHMv",
-      snippetUrl: "/audio/snippet_here_with_me.ogg" 
-    },
-    { 
-      id: 'gangsta',
-      title: "Gangsta (Cover)", 
-      type: "Single / 2025", 
-      tag: "Dark R&B",
-      cover: "https://i.imgur.com/SoNPdjY.jpeg",
-      spotifyUrl: "https://open.spotify.com/intl-es/track/4i6lvmArvdt9t2vRiskHN7",
-      snippetUrl: "/audio/snippet_gangsta.ogg"
-    },
-    { 
-      id: 'narcotics',
-      title: "Narcotics", 
-      type: "Single / 2025", 
-      tag: "Dark Electronic",
-      cover: "https://i.imgur.com/gKpPX4s.jpeg",
-      spotifyUrl: "https://open.spotify.com/intl-es/track/0wnO2GjTLEgAP9LFGeJ0KL",
-      snippetUrl: "/audio/snippet_narcotics.ogg"
-    },
-  ];
 
   const handlePlaySnippet = (workId, url) => {
     if (activeSnippet === workId) {
@@ -639,11 +640,13 @@ export default function App() {
           100% { transform: scaleY(1); }
         }
       `}</style>
+
       {/* Solo dejamos la etiqueta audio para los snippets que no requieren sincro */}
       <audio 
         ref={snippetAudioRef} 
         onEnded={() => setActiveSnippet(null)} 
       />
+
       <div 
         ref={cursorRef} 
         className={`hidden md:block fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference will-change-transform transition-opacity duration-300 ${isDotStolen ? 'opacity-100' : 'opacity-0'}`}

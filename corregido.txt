@@ -1,19 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-// ── Globals del sistema de audio en Memoria (Sample-Accurate) ───────────────
+// ── Globals del sistema de audio ────────────────────────────────────────────
 let globalAudioCtx      = null;
-let globalMasterGain    = null;   
-let globalStreamDest    = null;   
-let globalMediaRecorder = null;   
-let globalRecChunks     = [];     
-let globalTrackGains    = {};     // Nodos de volumen individuales por pista
-let globalAudioBuffers  = {};     // Archivos decodificados en RAM
-let globalBufferSources = {};     // Reproductores de los buffers
+let globalMasterGain    = null;   // nodo central: fuentes → aquí → speakers + grabación
+let globalStreamDest    = null;   // MediaStreamDestination (tap de grabación)
+let globalMediaRecorder = null;   // MediaRecorder nativo del browser
+let globalRecChunks     = [];     // chunks de audio capturados
+let globalSourceNodes   = {};     // MediaElementSources ya creados
+let globalTrackGains    = {};     // <-- FIX iOS: Nodos de volumen individuales por pista
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false); // Nuevo estado de carga
-  const [loadingProgress, setLoadingProgress] = useState(0); // Porcentaje
   const [time, setTime] = useState(0);
   
   const [isRecording, setIsRecording] = useState(false);
@@ -69,65 +66,19 @@ export default function App() {
     trackStatesRef.current = trackStates;
   }, [trackStates]);
 
+  const etherRef = useRef(null);
+  const bassRef = useRef(null);
+  const arpRef = useRef(null);
+  const drumRef = useRef(null);
+
   const cursorRef = useRef(null);
   const cursorInnerRef = useRef(null);
+  
   const canvasRef = useRef(null);
 
   const [activeSnippet, setActiveSnippet] = useState(null);
   const snippetAudioRef = useRef(null);
 
-  // ── 1. PRECARGA DE AUDIOS EN RAM (SYNC PERFECTO) ───────────────
-  useEffect(() => {
-    const loadAudioAssets = async () => {
-      try {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!globalAudioCtx) {
-          globalAudioCtx = new AC();
-          globalMasterGain = globalAudioCtx.createGain();
-          globalMasterGain.gain.value = 1;
-          globalMasterGain.connect(globalAudioCtx.destination);
-
-          globalStreamDest = globalAudioCtx.createMediaStreamDestination();
-          globalMasterGain.connect(globalStreamDest);
-
-          // Crear un GainNode por cada Stem para control de volumen individual
-          ['ether', 'bass', 'arp', 'drums'].forEach(id => {
-            const gainNode = globalAudioCtx.createGain();
-            gainNode.gain.value = 0; // Empiezan muteados
-            gainNode.connect(globalMasterGain);
-            globalTrackGains[id] = gainNode;
-          });
-        }
-
-        const urls = {
-          ether: '/audio/stem_atmosphere.ogg',
-          bass: '/audio/stem_subbass.ogg',
-          arp: '/audio/stem_syntharp.ogg',
-          drums: '/audio/stem_percussion.ogg'
-        };
-
-        let loadedCount = 0;
-        const total = Object.keys(urls).length;
-
-        for (const [id, url] of Object.entries(urls)) {
-          const response = await fetch(url);
-          const arrayBuffer = await response.arrayBuffer();
-          // Decodificamos el audio a la memoria RAM del dispositivo
-          const audioBuffer = await globalAudioCtx.decodeAudioData(arrayBuffer);
-          globalAudioBuffers[id] = audioBuffer;
-          loadedCount++;
-          setLoadingProgress(Math.round((loadedCount / total) * 100));
-        }
-        
-        setIsLoaded(true);
-      } catch (error) {
-        console.error("Error preloading audio buffers:", error);
-        setIsLoaded(true); // Permitimos entrar aunque falle por seguridad
-      }
-    };
-
-    loadAudioAssets();
-  }, []);
   const works = [
     { 
       id: 'here-with-me',
@@ -174,7 +125,9 @@ export default function App() {
     }
 
     if (!isPaused && hasEntered && !hasSaved) {
-      if (globalAudioCtx) globalAudioCtx.suspend(); // Pausa perfecta de stems
+      const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
+      tracks.forEach(track => track && track.pause());
+      if (globalAudioCtx) globalAudioCtx.suspend();
       if (globalMediaRecorder && globalMediaRecorder.state === "recording") globalMediaRecorder.pause();
       setIsPaused(true);
     }
@@ -406,82 +359,146 @@ export default function App() {
     document.body.removeChild(textArea);
   };
 
-  // ── 2. INICIO Y DISPARO SIMULTÁNEO (SYNC MÓVIL PERFECTO) ──────────
-  const handleEnter = async () => {
-    if (!isLoaded) return;
-    setHasEntered(true);
-    
-    if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
-      await globalAudioCtx.resume();
-    }
-
-    // Configurar grabadora
-    globalRecChunks = [];
-    const mimeType = [
-      'audio/ogg;codecs=opus', 'audio/ogg', 
-      'audio/webm;codecs=opus', 'audio/webm'
-    ].find(t => MediaRecorder.isTypeSupported(t)) || '';
-
+  // ── Sistema de audio con MediaRecorder nativo ──────────────────────────
+  const initAudioSystem = () => {
     try {
-      globalMediaRecorder = new MediaRecorder(globalStreamDest.stream, mimeType ? { mimeType } : {});
+      // 1. Crear AudioContext una sola vez
+      if (!globalAudioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        globalAudioCtx = new AC();
+
+        globalMasterGain = globalAudioCtx.createGain();
+        globalMasterGain.gain.value = 1;
+
+        globalMasterGain.connect(globalAudioCtx.destination);
+
+        globalStreamDest = globalAudioCtx.createMediaStreamDestination();
+        globalMasterGain.connect(globalStreamDest);
+      }
+
+      if (globalAudioCtx.state === 'suspended') {
+        globalAudioCtx.resume();
+      }
+
+      // HACK PARA iOS MOBILES: Buffer silencioso para desbloquear Web Audio
+      const buffer = globalAudioCtx.createBuffer(1, 1, 22050);
+      const dummySource = globalAudioCtx.createBufferSource();
+      dummySource.buffer = buffer;
+      dummySource.connect(globalAudioCtx.destination);
+      dummySource.start(0);
+
+      // FIX PARA iOS: Envolver cada <audio> en su propio GainNode
+      const refMap = { ether: etherRef, bass: bassRef, arp: arpRef, drums: drumRef };
+      Object.entries(refMap).forEach(([id, ref]) => {
+        if (ref.current && !globalSourceNodes[id]) {
+          const source = globalAudioCtx.createMediaElementSource(ref.current);
+          const gainNode = globalAudioCtx.createGain();
+          
+          // La ganancia inicial depende del estado actual 
+          gainNode.gain.value = trackStatesRef.current[id] ? 1 : 0;
+          
+          source.connect(gainNode);
+          gainNode.connect(globalMasterGain);
+          
+          globalSourceNodes[id] = source;
+          globalTrackGains[id] = gainNode;
+        }
+      });
+
+      globalRecChunks = [];
+      const mimeType = [
+        'audio/ogg;codecs=opus',
+        'audio/ogg',
+        'audio/webm;codecs=opus',
+        'audio/webm',
+      ].find(t => MediaRecorder.isTypeSupported(t)) || '';
+
+      globalMediaRecorder = new MediaRecorder(
+        globalStreamDest.stream,
+        mimeType ? { mimeType } : {}
+      );
+
       globalMediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) globalRecChunks.push(e.data);
       };
+
       globalMediaRecorder.start(500); 
       setIsRecording(true);
-    } catch(err) {
-      console.error("No recorder:", err);
+
+    } catch (err) {
+      console.error('Audio Init Error:', err);
       setIsRecording(true);
     }
+  };
 
-    // Resetear las ganancias (Solo Ether activo al inicio)
-    ['ether', 'bass', 'arp', 'drums'].forEach(id => {
-      if (globalTrackGains[id]) {
-        globalTrackGains[id].gain.value = id === 'ether' ? 1 : 0;
+  const handleEnter = () => {
+    setHasEntered(true);
+    
+    // Inicializar AudioContext y ruteo PRIMERO.
+    initAudioSystem();
+
+    const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
+    tracks.forEach(track => {
+      if (track) {
+        track.volume = 0;
+        track.muted = true; // <-- FIX MÓVIL
+        track.play().catch(e => console.log("Audio play failed:", e));
       }
     });
-    setTrackStates({ ether: true, bass: false, arp: false, drums: false });
 
-    // DISPARO SIMULTÁNEO: Todos los audios inician exactamente en el mismo milisegundo
-    const startTime = globalAudioCtx.currentTime + 0.1; // 100ms de margen para el procesador
+    setTrackStates({ ether: true, bass: false, arp: false, drums: false });
     
-    ['ether', 'bass', 'arp', 'drums'].forEach(id => {
-      if (globalAudioBuffers[id]) {
-        const source = globalAudioCtx.createBufferSource();
-        source.buffer = globalAudioBuffers[id];
-        source.loop = true; // Loop infinito nativo, sin gaps
-        source.connect(globalTrackGains[id]);
-        source.start(startTime);
-        globalBufferSources[id] = source;
-      }
+    if (etherRef.current) {
+      etherRef.current.volume = 1;
+      etherRef.current.muted = false; // <-- FIX MÓVIL
+    }
+    
+    // Aseguramos las ganancias en el motor Web Audio (FIX MÓVIL)
+    if (globalTrackGains['ether']) globalTrackGains['ether'].gain.value = 1;
+    ['bass', 'arp', 'drums'].forEach(id => {
+      if (globalTrackGains[id]) globalTrackGains[id].gain.value = 0;
     });
   };
 
   const toggleTrack = (trackId) => {
     setTrackStates(prev => {
       const newState = !prev[trackId];
+      const refMap = { ether: etherRef, bass: bassRef, arp: arpRef, drums: drumRef };
+      const trackRef = refMap[trackId];
+      
+      // Control de estado nativo HTML (fallback)
+      if (trackRef && trackRef.current) {
+        trackRef.current.volume = newState ? 1 : 0;
+        trackRef.current.muted = !newState; // <-- FIX MÓVIL
+      }
+      
+      // Control de volumen Web Audio API (El FIX definitivo para iOS)
       if (globalTrackGains[trackId] && globalAudioCtx) {
-        // Hacemos una transición suavizada (ramp) de 50ms para que no haya "clics" de audio
         globalTrackGains[trackId].gain.setTargetAtTime(newState ? 1 : 0, globalAudioCtx.currentTime, 0.05);
       }
+      
       return { ...prev, [trackId]: newState };
     });
   };
 
   const handlePause = () => {
+    const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
     if (isPaused) {
+      // Reanudar
+      tracks.forEach(track => track && track.play());
       if (globalAudioCtx) globalAudioCtx.resume();
       if (globalMediaRecorder && globalMediaRecorder.state === 'paused') {
         globalMediaRecorder.resume();
       }
       setIsPaused(false);
-      
       if (activeSnippet) {
         if (snippetAudioRef.current) snippetAudioRef.current.pause();
         setActiveSnippet(null);
       }
     } else {
-      if (globalAudioCtx) globalAudioCtx.suspend(); // Congela el reloj del audio (Pausa perfecta)
+      // Pausar
+      tracks.forEach(track => track && track.pause());
+      if (globalAudioCtx) globalAudioCtx.suspend();
       if (globalMediaRecorder && globalMediaRecorder.state === 'recording') {
         globalMediaRecorder.pause();
       }
@@ -492,20 +509,20 @@ export default function App() {
   const handleStopAndSave = () => {
     setIsRecording(false);
 
-    // Apagar las fuentes de audio
-    ['ether', 'bass', 'arp', 'drums'].forEach(id => {
-      if (globalBufferSources[id]) {
-        try { globalBufferSources[id].stop(); } catch(e){}
-      }
+    const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
+    tracks.forEach(track => {
+      if (track) { track.pause(); track.currentTime = 0; }
     });
 
     if (!globalMediaRecorder) {
+      console.warn('No hay grabadora activa.');
       setHasSaved(true);
       return;
     }
 
     globalMediaRecorder.onstop = () => {
       if (globalRecChunks.length === 0) {
+        console.warn('No se grabaron datos de audio.');
         setHasSaved(true);
         return;
       }
@@ -545,41 +562,28 @@ export default function App() {
     globalMediaRecorder = null;
     globalRecChunks = [];
 
-    const mimeType = [
-      'audio/ogg;codecs=opus', 'audio/ogg', 
-      'audio/webm;codecs=opus', 'audio/webm'
-    ].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    initAudioSystem();
 
-    try {
-      globalMediaRecorder = new MediaRecorder(globalStreamDest.stream, mimeType ? { mimeType } : {});
-      globalMediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) globalRecChunks.push(e.data);
-      };
-      globalMediaRecorder.start(500); 
-      setIsRecording(true);
-    } catch(err) {
-      setIsRecording(true);
-    }
+    const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
+    tracks.forEach(track => {
+      if (track) {
+        track.currentTime = 0;
+        track.volume = 0;
+        track.muted = true; // <-- FIX MÓVIL
+        track.play().catch(e => console.log("Audio play failed:", e));
+      }
+    });
 
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
     
-    // Disparo Simultáneo otra vez
-    const startTime = globalAudioCtx.currentTime + 0.1;
-    ['ether', 'bass', 'arp', 'drums'].forEach(id => {
-      if (globalTrackGains[id]) {
-        globalTrackGains[id].gain.value = id === 'ether' ? 1 : 0;
-      }
-      if (globalBufferSources[id]) {
-        try { globalBufferSources[id].stop(); } catch(e){}
-      }
-      if (globalAudioBuffers[id]) {
-        const source = globalAudioCtx.createBufferSource();
-        source.buffer = globalAudioBuffers[id];
-        source.loop = true;
-        source.connect(globalTrackGains[id]);
-        source.start(startTime);
-        globalBufferSources[id] = source;
-      }
+    if (etherRef.current) {
+      etherRef.current.volume = 1;
+      etherRef.current.muted = false; // <-- FIX MÓVIL
+    }
+    
+    if (globalTrackGains['ether']) globalTrackGains['ether'].gain.value = 1;
+    ['bass', 'arp', 'drums'].forEach(id => {
+      if (globalTrackGains[id]) globalTrackGains[id].gain.value = 0;
     });
   };
 
@@ -639,11 +643,12 @@ export default function App() {
           100% { transform: scaleY(1); }
         }
       `}</style>
-      {/* Solo dejamos la etiqueta audio para los snippets que no requieren sincro */}
+
       <audio 
         ref={snippetAudioRef} 
         onEnded={() => setActiveSnippet(null)} 
       />
+
       <div 
         ref={cursorRef} 
         className={`hidden md:block fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference will-change-transform transition-opacity duration-300 ${isDotStolen ? 'opacity-100' : 'opacity-0'}`}
@@ -654,6 +659,11 @@ export default function App() {
         ></div>
       </div>
 
+      <audio ref={etherRef} src="/audio/stem_atmosphere.ogg" playsInline preload="auto" loop />
+      <audio ref={bassRef} src="/audio/stem_subbass.ogg" playsInline preload="auto" loop />
+      <audio ref={arpRef} src="/audio/stem_syntharp.ogg" playsInline preload="auto" loop />
+      <audio ref={drumRef} src="/audio/stem_percussion.ogg" playsInline preload="auto" loop />
+
       <canvas 
         ref={canvasRef}
         className={`fixed inset-0 w-full h-full z-0 pointer-events-none transition-opacity duration-[2000ms] ${hasEntered ? 'opacity-70' : 'opacity-0'}`}
@@ -661,7 +671,6 @@ export default function App() {
 
       <div className="noise-overlay"></div>
 
-      {/* --- GATEKEEPER CON PORCENTAJE DE CARGA --- */}
       {!hasEntered && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505] transition-opacity duration-1000">
           <h1 className="font-modern text-4xl md:text-7xl text-white font-light tracking-tighter lowercase mb-12 drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] relative z-10">
@@ -671,18 +680,15 @@ export default function App() {
               onClick={() => setIsDotStolen(false)}
             >.</span><span className="font-serif italic text-white/70 tracking-normal">studio</span><span className="animate-pulse text-white/30 font-mono ml-1">_</span>
           </h1>
-          
           <button 
-            onClick={isLoaded ? handleEnter : null}
-            className={`group relative px-8 py-4 overflow-hidden rounded-full border transition-all duration-500 
-              ${isLoaded ? 'border-white/10 hover:border-[#9D4EDD]/50 cursor-pointer' : 'border-white/5 opacity-50 cursor-wait'}`}
+            onClick={handleEnter}
+            className="group relative px-8 py-4 overflow-hidden rounded-full border border-white/10 hover:border-[#9D4EDD]/50 transition-all duration-500"
           >
-            <div className={`absolute inset-0 w-0 transition-all duration-500 ease-out group-hover:w-full ${isLoaded ? 'bg-[#9D4EDD]/10' : 'bg-transparent'}`}></div>
+            <div className="absolute inset-0 w-0 bg-[#9D4EDD]/10 transition-all duration-500 ease-out group-hover:w-full"></div>
             <span className="relative tracking-[0.3em] text-[#9ca3af] group-hover:text-white transition-colors text-xs uppercase">
-              {isLoaded ? 'Enter Soundscape' : `Loading Assets... ${loadingProgress}%`}
+              Enter Soundscape
             </span>
           </button>
-
         </div>
       )}
 
@@ -989,54 +995,4 @@ export default function App() {
           </h1>
           <div className="flex gap-6 text-[10px] tracking-widest uppercase text-[#9ca3af] items-center">
             <a href="https://www.instagram.com/napbak.studio" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Instagram</a>
-            <a href="https://open.spotify.com/intl-es/artist/1mc3f2GvIm1g6f61hVvyJt" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Spotify</a>
-            <div className="w-[1px] h-3 bg-white/10 hidden md:block"></div>
-            <a href="https://napbak.dev" target="_blank" rel="noreferrer" className="text-[#9D4EDD] hover:text-[#E0AAFF] transition-colors flex items-center gap-1 group">
-              DEV HUB <span className="group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform text-[8px]">↗</span>
-            </a>
-          </div>
-          <p className="text-[9px] tracking-widest text-white/20 mt-8">© {new Date().getFullYear()} ALL RIGHTS RESERVED.</p>
-        </footer>
-
-      </main>
-
-      <div className={`fixed inset-0 z-[200] bg-[#050505]/95 backdrop-blur-xl flex flex-col justify-center items-center transition-all duration-700 ${isContactOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <button 
-          onClick={() => setIsContactOpen(false)} 
-          className="absolute top-8 right-8 md:top-12 md:right-12 text-[10px] tracking-[0.3em] uppercase text-white/50 hover:text-white transition-colors flex items-center gap-2 group"
-        >
-          CLOSE <span className="group-hover:rotate-90 transition-transform duration-300">✕</span>
-        </button>
-        
-        <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-8">INITIATE CONNECTION</h2>
-        
-        <div className="flex flex-col items-center gap-12 text-center">
-          <button 
-            onClick={handleCopyEmail} 
-            className="group relative inline-block"
-          >
-            <span className={`block font-serif italic text-4xl md:text-7xl lg:text-8xl transition-colors duration-500 ${copied ? 'text-[#1DB954]' : 'text-white group-hover:text-[#9D4EDD]'}`}>
-              {copied ? 'Copied to clipboard.' : 'hello@napbak.studio'}
-            </span>
-            <span className={`absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] tracking-widest uppercase transition-opacity duration-300 ${copied ? 'opacity-0' : 'opacity-0 group-hover:opacity-50'}`}>
-              Click to copy
-            </span>
-          </button>
-          
-          <div className="flex flex-col items-center gap-6 mt-8">
-            <p className="text-[9px] tracking-[0.4em] text-white/30 uppercase">Or reach out via</p>
-            <div className="flex gap-4 md:gap-8">
-              <a href="https://wa.me/1234567890" target="_blank" rel="noreferrer" className="border border-white/20 px-6 py-3 rounded-full text-[10px] tracking-widest uppercase hover:bg-white hover:text-black transition-all">
-                WhatsApp
-              </a>
-              <a href="https://www.instagram.com/napbak.studio" target="_blank" rel="noreferrer" className="border border-white/20 px-6 py-3 rounded-full text-[10px] tracking-widest uppercase hover:bg-white hover:text-black transition-all">
-                Instagram
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  );
-}
+            <a href="
