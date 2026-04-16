@@ -422,6 +422,12 @@ export default function App() {
 
   const handleEnter = () => {
     setHasEntered(true);
+    
+    // Inicializar AudioContext y ruteo PRIMERO.
+    // Crítico para iOS/Safari: el MediaElementSource debe existir
+    // y estar conectado ANTES de invocar el .play()
+    initAudioSystem();
+
     const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
     tracks.forEach(track => {
       if (track) {
@@ -430,8 +436,6 @@ export default function App() {
       }
     });
 
-    initAudioSystem();
-    
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
     if (etherRef.current) etherRef.current.volume = 1;
   };
@@ -534,6 +538,9 @@ export default function App() {
     globalMediaRecorder = null;
     globalRecChunks = [];
 
+    // Llamar initAudioSystem PRIMERO para que el ruteo esté listo (fix iOS/Safari)
+    initAudioSystem();
+
     const tracks = [etherRef.current, bassRef.current, arpRef.current, drumRef.current];
     tracks.forEach(track => {
       if (track) {
@@ -545,8 +552,6 @@ export default function App() {
 
     setTrackStates({ ether: true, bass: false, arp: false, drums: false });
     if (etherRef.current) etherRef.current.volume = 1;
-
-    initAudioSystem();
   };
 
   const stemsConfig = [
