@@ -33,22 +33,30 @@ const DATOS_DEL_CLIENTE = {
     upc: "825293202685",
     distribuidora: "DistroKid",
     fechaSubida: "6 de mayo de 2026",
-    hyperfollow: "https://distrokid.com/hyperfollow/tusasong1/msica-para-la-gastronoma-andina-remastered"
+    hyperfollow: "https://open.spotify.com/intl-es/album/473lN9eSynOBPEVidAmFcu",
+    spotify: "https://open.spotify.com/intl-es/album/473lN9eSynOBPEVidAmFcu"
   },
   
   // ESTADO DEL LANZAMIENTO (Progreso visual)
   // Cambia el "pasoActual" de 1 a 4 según avance el proceso.
   // 1: Subido | 2: Revisado | 3: Enviando a Tiendas | 4: ¡En Spotify!
-  pasoActual: 3, 
+  pasoActual: 4, 
 
   // NUEVO: BITÁCORA DE GESTIÓN (Tus acciones como manager para justificar el pago)
   bitacora: [
+    { 
+      id: 0,
+      fecha: "10 May 2026", 
+      titulo: "Lanzamiento oficial en Spotify",
+      descripcion: "El álbum ya se encuentra disponible y sincronizado en la plataforma de Spotify con todos los metadatos correctos.",
+      estado: "Completado" 
+    },
     { 
       id: 1,
       fecha: "06 May 2026", 
       titulo: "Monitoreo de transferencia",
       descripcion: "Auditoría del envío de metadatos (ISRC) hacia servidores de Spotify y Apple Music.",
-      estado: "En proceso" 
+      estado: "Completado" 
     },
     { 
       id: 2,
@@ -271,13 +279,15 @@ export default function TusasongDashboard() {
                 className="w-full max-w-[280px] aspect-square object-cover rounded-lg shadow-xl shadow-yellow-900/10 border border-gray-800 mb-6"
               />
               <a 
-                href={DATOS_DEL_CLIENTE.albumDetalle.hyperfollow}
+                href={DATOS_DEL_CLIENTE.albumDetalle.spotify}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center w-full bg-white text-black font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors"
+                className="flex items-center justify-center w-full bg-[#1DB954] text-white font-bold py-3 px-4 rounded-xl hover:bg-[#1ed760] transition-colors shadow-lg shadow-[#1DB954]/20 hover:scale-[1.02] transform duration-200"
               >
-                <LinkIcon className="w-5 h-5 mr-2" />
-                Abrir enlace para compartir
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 mr-2">
+                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.84.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15.001 10.62 18.66 12.9c.54.3.66.9.301 1.14zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                </svg>
+                Escuchar álbum en Spotify
               </a>
             </div>
 
