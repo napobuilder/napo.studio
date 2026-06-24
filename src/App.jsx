@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import MasterAnalyzer from './components/MasterAnalyzer';
 
 // ── Globals del sistema de audio en Memoria (Sample-Accurate) ───────────────
 let globalAudioCtx      = null;
@@ -11,9 +12,9 @@ let globalAudioBuffers  = {};     // Archivos decodificados en RAM
 let globalBufferSources = {};     // Reproductores de los buffers
 
 export default function App() {
-  const [hasEntered, setHasEntered] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false); // Nuevo estado de carga
-  const [loadingProgress, setLoadingProgress] = useState(0); // Porcentaje
+  const [hasEntered, setHasEntered] = useState(false); // Si se activó el mixer interactivo
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [time, setTime] = useState(0);
   
   const [isRecording, setIsRecording] = useState(false);
@@ -25,6 +26,11 @@ export default function App() {
 
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Estados Pro e Intersection Observer para carga diferida
+  const [isPro, setIsPro] = useState(false);
+  const [mixerInView, setMixerInView] = useState(false);
+  const [mixerAudioLoaded, setMixerAudioLoaded] = useState(false);
 
   const [trackStates, setTrackStates] = useState({
     ether: false,
@@ -41,12 +47,48 @@ export default function App() {
   const cursorRef = useRef(null);
   const cursorInnerRef = useRef(null);
   const canvasRef = useRef(null);
+  const mixerSectionRef = useRef(null); // Ref para el mixer
 
   const [activeSnippet, setActiveSnippet] = useState(null);
   const snippetAudioRef = useRef(null);
 
+  // Sincronizar estado PRO reactivo
+  useEffect(() => {
+    const checkPro = () => {
+      setIsPro(localStorage.getItem('napbak_pro') === 'true');
+    };
+    checkPro();
+    window.addEventListener('storage', checkPro);
+    window.addEventListener('napbak_pro_changed', checkPro);
+    return () => {
+      window.removeEventListener('storage', checkPro);
+      window.removeEventListener('napbak_pro_changed', checkPro);
+    };
+  }, []);
+
+  // Intersection Observer para disparar carga del mixer cuando esté en pantalla
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setMixerInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    if (mixerSectionRef.current) {
+      observer.observe(mixerSectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   // ── 1. PRECARGA DE AUDIOS EN RAM (SYNC PERFECTO) ───────────────
   useEffect(() => {
+    if (!mixerInView) return;
+
     const loadAudioAssets = async () => {
       try {
         const AC = window.AudioContext || window.webkitAudioContext;
@@ -101,14 +143,16 @@ export default function App() {
         }));
         
         setIsLoaded(true);
+        setMixerAudioLoaded(true);
       } catch (error) {
         console.error("Error preloading audio buffers:", error);
-        setIsLoaded(true); // Permitimos entrar aunque falle por seguridad
+        setIsLoaded(true);
+        setMixerAudioLoaded(true); // Permitimos entrar aunque falle por seguridad
       }
     };
 
     loadAudioAssets();
-  }, []);
+  }, [mixerInView]);
   const works = [
     { 
       id: 'here-with-me',
@@ -656,37 +700,12 @@ export default function App() {
 
       <canvas 
         ref={canvasRef}
-        className={`fixed inset-0 w-full h-full z-0 pointer-events-none transition-opacity duration-[2000ms] ${hasEntered ? 'opacity-70' : 'opacity-0'}`}
+        className="fixed inset-0 w-full h-full z-0 pointer-events-none opacity-40 transition-opacity duration-1000"
       />
 
       <div className="noise-overlay"></div>
 
-      {/* --- GATEKEEPER CON PORCENTAJE DE CARGA --- */}
-      {!hasEntered && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505] transition-opacity duration-1000">
-          <h1 className="font-modern text-4xl md:text-7xl text-white font-light tracking-tighter lowercase mb-12 drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] relative z-10">
-            napbak<span 
-              className={`font-serif italic text-white tracking-normal transition-opacity duration-300 px-[2px] cursor-pointer dot-slot ${isDotStolen ? 'opacity-0' : 'opacity-100'}`}
-              onMouseEnter={() => setIsDotStolen(true)}
-              onClick={() => setIsDotStolen(false)}
-            >.</span><span className="font-serif italic text-white/70 tracking-normal">studio</span><span className="animate-pulse text-white/30 font-mono ml-1">_</span>
-          </h1>
-          
-          <button 
-            onClick={isLoaded ? handleEnter : null}
-            className={`group relative px-8 py-4 overflow-hidden rounded-full border transition-all duration-500 
-              ${isLoaded ? 'border-white/10 hover:border-[#9D4EDD]/50 cursor-pointer' : 'border-white/5 opacity-50 cursor-wait'}`}
-          >
-            <div className={`absolute inset-0 w-0 transition-all duration-500 ease-out group-hover:w-full ${isLoaded ? 'bg-[#9D4EDD]/10' : 'bg-transparent'}`}></div>
-            <span className="relative tracking-[0.3em] text-[#9ca3af] group-hover:text-white transition-colors text-xs uppercase">
-              {isLoaded ? 'Enter Soundscape' : `Loading Assets... ${loadingProgress}%`}
-            </span>
-          </button>
-
-        </div>
-      )}
-
-      <nav className={`fixed top-0 w-full px-6 md:px-10 flex justify-between items-center z-40 transition-all duration-500 ${hasEntered ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${isScrolled ? 'py-4 md:py-6 bg-[#050505]/90 backdrop-blur-md border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]' : 'py-6 md:py-10 bg-transparent'}`}>
+      <nav className={`fixed top-0 w-full px-6 md:px-10 flex justify-between items-center z-40 transition-all duration-500 opacity-100 ${isScrolled ? 'py-4 md:py-6 bg-[#050505]/90 backdrop-blur-md border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]' : 'py-6 md:py-10 bg-transparent'}`}>
         
         <div className="flex flex-col relative z-10 flex-1 items-start">
           <span className="font-modern text-2xl md:text-3xl text-white font-light tracking-tighter lowercase relative z-10">
@@ -701,14 +720,35 @@ export default function App() {
 
         <div className="absolute inset-0 hidden md:flex justify-center items-center pointer-events-none z-20">
           <div className="flex gap-8 text-[10px] tracking-widest uppercase pointer-events-auto">
-            <a href="#mixer" onClick={(e) => scrollTo(e, 'mixer')} className="hover:text-white transition-colors cursor-pointer">Mixer</a>
+            <a href="#analyzer" onClick={(e) => scrollTo(e, 'analyzer')} className="hover:text-white transition-colors cursor-pointer text-[#9D4EDD] font-bold">Analyzer</a>
+            <a href="#pricing" onClick={(e) => scrollTo(e, 'pricing')} className="hover:text-white transition-colors cursor-pointer">Pricing</a>
             <a href="#about" onClick={(e) => scrollTo(e, 'about')} className="hover:text-white transition-colors cursor-pointer">About</a>
-            <a href="#works" onClick={(e) => scrollTo(e, 'works')} className="hover:text-white transition-colors cursor-pointer">Selected Works</a>
+            <a href="#works" onClick={(e) => scrollTo(e, 'works')} className="hover:text-white transition-colors cursor-pointer">Works</a>
+            <a href="#mixer" onClick={(e) => scrollTo(e, 'mixer')} className="hover:text-white transition-colors cursor-pointer">Mixer</a>
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-3 lg:gap-6 relative z-10 flex-1">
-          <div className={`flex items-center gap-2 transition-all duration-500 origin-right overflow-hidden ${isScrolled && !hasSaved ? 'opacity-100 w-[40px] md:w-[150px] translate-x-0' : 'opacity-0 w-0 -translate-x-4 pointer-events-none'}`}>
+          {/* Botón PRO reactivo en Nav */}
+          {isPro ? (
+            <span className="text-[9px] md:text-[10px] tracking-widest text-[#E0AAFF] font-bold border border-[#9D4EDD]/30 bg-[#9D4EDD]/10 px-4 py-2 rounded-full hidden sm:block">
+              PRO ACTIVE
+            </span>
+          ) : (
+            <button 
+              onClick={() => {
+                localStorage.setItem('napbak_pro', 'true');
+                window.dispatchEvent(new Event('napbak_pro_changed'));
+                const element = document.getElementById('analyzer');
+                element?.scrollIntoView({ behavior: 'smooth' });
+              }} 
+              className="text-[9px] md:text-[10px] tracking-widest bg-[#9D4EDD] text-white border border-[#9D4EDD] px-4 py-2 rounded-full hover:bg-[#E0AAFF] hover:border-[#E0AAFF] hover:text-black transition-all font-bold hidden sm:block shadow-lg shadow-[#9D4EDD]/10"
+            >
+              GET PRO
+            </button>
+          )}
+
+          <div className={`flex items-center gap-2 transition-all duration-500 origin-right overflow-hidden ${isScrolled && !hasSaved && hasEntered ? 'opacity-100 w-[40px] md:w-[150px] translate-x-0' : 'opacity-0 w-0 -translate-x-4 pointer-events-none'}`}>
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/10 whitespace-nowrap">
               <div className={`w-1.5 h-1.5 rounded-full ${isRecording && !isPaused ? 'bg-red-500 animate-pulse' : 'bg-red-500/30'}`}></div>
               <span className="text-[9px] tracking-widest text-white">{isPaused ? 'PAUSED' : formatTime(time)}</span>
@@ -734,115 +774,157 @@ export default function App() {
         </div>
       </nav>
 
-      <main className={`transition-opacity duration-1000 delay-300 ${hasEntered ? 'opacity-100' : 'opacity-0 h-screen overflow-hidden'}`}>
+      <main className="transition-opacity duration-1000 delay-300 opacity-100">
         
-        <section id="mixer" className="relative min-h-screen w-full flex flex-col items-center justify-between pt-32 pb-8">
-          
-          <div className="flex flex-col items-center gap-3 mt-2 md:mt-4 px-6 relative z-10">
-            <div className={`flex items-center gap-1.5 p-1 px-1.5 rounded-full border transition-all duration-500 backdrop-blur-md ${hasSaved ? 'bg-[#9D4EDD]/20 border-[#9D4EDD]/50' : 'bg-[#050505]/40 border-white/10'}`}>
-              
-              <div className="flex items-center gap-2 px-2 py-1">
-                <div className={`w-1.5 h-1.5 rounded-full ${isRecording && !isPaused ? 'bg-red-500 animate-pulse' : hasSaved ? 'bg-[#9D4EDD]' : 'bg-red-500/30'}`}></div>
-                <span className={`text-[8px] md:text-[9px] tracking-widest ${hasSaved ? 'text-[#E0AAFF]' : 'text-white'}`}>
-                  {hasSaved ? 'SESSION EXPORTED' : isPaused ? `PAUSED ${formatTime(time)}` : `REC ${formatTime(time)}`}
-                </span>
-              </div>
+        {/* Hero Section */}
+        <section className="relative min-h-[75vh] w-full flex flex-col items-center justify-center pt-32 pb-10 px-6 text-center z-10">
+          <div className="max-w-4xl mx-auto flex flex-col items-center">
+            
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] tracking-[0.2em] uppercase text-white/50 mb-6 backdrop-blur-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#9D4EDD] animate-ping"></span>
+              Streaming Loudness Standards
+            </div>
 
-              {!hasSaved && (
-                <div className="flex items-center gap-1 border-l border-white/10 pl-1.5">
-                  <button
-                    onClick={handlePause}
-                    className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-[#9ca3af] hover:text-white"
-                    title={isPaused ? "Resume" : "Pause"}
-                  >
-                    {isPaused ? (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    ) : (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                    )}
-                  </button>
-                  <button
-                    onClick={handleStopAndSave}
-                    className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-[#9ca3af] hover:text-white group flex items-center gap-1.5"
-                    title="Stop & Download Mix"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                  </button>
-                </div>
-              )}
+            <h1 className="font-modern text-4xl md:text-7xl font-light text-white tracking-tighter leading-tight mb-6">
+              Master your track. <br />
+              <span className="font-serif italic text-white/70">Know your numbers.</span>
+            </h1>
+
+            <p className="text-xs md:text-sm text-[#9ca3af] font-mono tracking-widest max-w-xl uppercase leading-relaxed mb-10 opacity-80">
+              Analiza volumen integrado, True Peak y rango dinámico contra estándares profesionales de distribución.
+            </p>
+
+            <div className="flex gap-4">
+              <a 
+                href="#analyzer" 
+                onClick={(e) => scrollTo(e, 'analyzer')}
+                className="text-[10px] tracking-widest bg-white text-black px-6 py-3.5 rounded-full font-bold hover:bg-[#9D4EDD] hover:text-white transition-all shadow-xl shadow-white/5"
+              >
+                START ANALYZING
+              </a>
+              <a 
+                href="#mixer" 
+                onClick={(e) => scrollTo(e, 'mixer')}
+                className="text-[10px] tracking-widest border border-white/20 px-6 py-3.5 rounded-full hover:bg-white hover:text-black transition-all"
+              >
+                THE BUILDER HUB
+              </a>
             </div>
             
-            {hasSaved ? (
-              <button 
-                onClick={handleReset}
-                className="text-[8px] uppercase tracking-[0.4em] text-[#9D4EDD] hover:text-[#E0AAFF] transition-colors text-center mt-1 border-b border-[#9D4EDD]/30 hover:border-[#E0AAFF]/50 pb-0.5 cursor-pointer backdrop-blur-sm bg-black/20"
-              >
-                START NEW SESSION
-              </button>
-            ) : (
-              <p className="text-[8px] uppercase tracking-[0.4em] text-white/30 text-center mt-1 backdrop-blur-sm bg-black/20 px-2 py-0.5 rounded">
-                Interactive Audio Experience
+          </div>
+        </section>
+
+        {/* Mastering & Spectrum Analyzer Section */}
+        <MasterAnalyzer 
+          onPlaybackStart={() => {
+            // Pause stems interactive playback to prevent overlapping audio
+            if (!isPaused && hasEntered && !hasSaved) {
+              if (globalAudioCtx) globalAudioCtx.suspend();
+              if (globalMediaRecorder && globalMediaRecorder.state === "recording") {
+                globalMediaRecorder.pause();
+              }
+              setIsPaused(true);
+            }
+          }}
+        />
+
+        {/* Pricing / Suscripción Section */}
+        <section id="pricing" className="py-24 border-t border-white/5 relative z-10 bg-[#050505]/40 backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto px-6">
+            
+            <div className="flex flex-col items-center text-center mb-16">
+              <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-4">01. MEMBERSHIP</h2>
+              <h3 className="font-modern text-3xl md:text-5xl font-light text-white tracking-tighter">
+                Simple, transparent <span className="font-serif italic text-white/70">plans</span>
+              </h3>
+              <p className="text-xs text-[#9ca3af]/60 uppercase tracking-[0.2em] font-mono mt-2">
+                Libera el verdadero potencial de tu música sin límites
               </p>
-            )}
-          </div>
+            </div>
 
-          <div className={`flex flex-col items-center justify-start w-full max-w-4xl px-6 pt-2 md:pt-4 flex-1 transition-opacity duration-1000 relative z-10 ${hasSaved ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
-            <div className="flex items-end justify-center gap-2 h-12 md:h-16 mb-5 md:mb-8 w-full max-w-md">
-              {stemsConfig.map((stem, i) => (
-                <div key={`vis-${stem.id}`} className="w-1/4 h-full flex items-end justify-center pb-2">
-                  <div 
-                    className={`w-1 rounded-full transition-all duration-500 ${trackStates[stem.id] ? `${stem.color} bar-anim drop-shadow-[0_0_10px_currentColor]` : 'bg-white/10 h-2'}`}
-                    style={{ animationDelay: `${i * 0.15}s` }}
-                  ></div>
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
+              
+              {/* Plan Free */}
+              <div className="border border-white/5 bg-[#0a0a0a]/30 backdrop-blur-sm rounded-3xl p-8 flex flex-col justify-between hover:border-white/10 transition-colors">
+                <div>
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h4 className="text-lg font-modern text-white tracking-widest uppercase">FREE</h4>
+                      <p className="text-xs text-white/40 font-mono mt-1">Pruebas rápidas</p>
+                    </div>
+                    <span className="font-serif italic text-2xl text-white/80">$0</span>
+                  </div>
+                  <ul className="text-xs font-mono space-y-4 text-white/60 mb-8 border-t border-white/5 pt-6">
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#9D4EDD]">✓</span> 3 análisis de master al día
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#9D4EDD]">✓</span> Medición de LUFS Integrados
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#9D4EDD]">✓</span> Estimador de True Peak
+                    </li>
+                    <li className="flex items-center gap-2 text-white/30">
+                      <span>✕</span> Sin recomendaciones avanzadas
+                    </li>
+                  </ul>
                 </div>
-              ))}
+                <button 
+                  onClick={() => {
+                    localStorage.removeItem('napbak_pro');
+                    window.dispatchEvent(new Event('napbak_pro_changed'));
+                    const element = document.getElementById('analyzer');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="w-full py-3 rounded-full border border-white/10 text-[9px] tracking-widest uppercase hover:bg-white/5 transition-colors font-mono"
+                >
+                  Active Free Plan
+                </button>
+              </div>
+
+              {/* Plan Pro */}
+              <div className="border border-[#9D4EDD]/30 bg-[#0a0a0a]/60 backdrop-blur-sm rounded-3xl p-8 flex flex-col justify-between hover:border-[#9D4EDD]/60 transition-colors relative shadow-[0_0_50px_rgba(157,78,221,0.05)]">
+                <div className="absolute -top-3 right-6 bg-[#9D4EDD] text-white text-[8px] font-mono tracking-widest uppercase px-3 py-1 rounded-full">
+                  POPULAR
+                </div>
+                <div>
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h4 className="text-lg font-modern text-[#E0AAFF] tracking-widest uppercase font-bold">PRO ACCESS</h4>
+                      <p className="text-xs text-[#E0AAFF]/40 font-mono mt-1">Sin restricciones</p>
+                    </div>
+                    <span className="font-serif italic text-2xl text-[#E0AAFF] font-bold">$9<span className="text-xs font-mono lowercase text-white/50">/mo</span></span>
+                  </div>
+                  <ul className="text-xs font-mono space-y-4 text-white/80 mb-8 border-t border-[#9D4EDD]/20 pt-6">
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#9D4EDD]">✓</span> Análisis ilimitados (Sin cupos diarios)
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#9D4EDD]">✓</span> Medición precisa de LRA (Loudness Range)
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#9D4EDD]">✓</span> Sugerencias de distorsión y clipping
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#9D4EDD]">✓</span> Recomendaciones avanzadas de streaming
+                    </li>
+                  </ul>
+                </div>
+                <button 
+                  onClick={() => {
+                    localStorage.setItem('napbak_pro', 'true');
+                    window.dispatchEvent(new Event('napbak_pro_changed'));
+                    const element = document.getElementById('analyzer');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="w-full py-3 rounded-full bg-[#9D4EDD] text-white hover:bg-[#E0AAFF] hover:text-black transition-colors text-[9px] tracking-widest uppercase font-bold shadow-xl shadow-[#9D4EDD]/10"
+                >
+                  Get Pro Access (Simulate)
+                </button>
+              </div>
+
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full">
-              {stemsConfig.map((stem) => {
-                const isActive = trackStates[stem.id];
-                return (
-                  <button
-                    key={stem.id}
-                    onClick={() => toggleTrack(stem.id)}
-                    className={`relative flex flex-col justify-between h-28 md:h-36 p-4 md:p-5 rounded-2xl transition-all duration-500 overflow-hidden group outline-none
-                      ${isActive 
-                        ? 'bg-[#050505]/90 pad-pressed scale-[0.98]' 
-                        : 'bg-[#0a0a0a]/40 pad-unpressed hover:bg-[#111]/60'
-                      }
-                    `}
-                  >
-                    <div className={`absolute inset-0 rounded-2xl border transition-colors duration-500 pointer-events-none ${isActive ? 'border-black/50' : 'border-white/5 group-hover:border-white/10'}`}></div>
-
-                    <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }}></div>
-
-                    <div 
-                      className={`absolute inset-0 opacity-0 transition-opacity duration-700 blur-2xl pointer-events-none ${isActive ? 'opacity-30' : 'group-hover:opacity-10'}`}
-                      style={{ backgroundColor: isActive ? stem.shadow : '#ffffff' }}
-                    ></div>
-                    
-                    <div className="flex justify-between items-start w-full relative z-10">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive ? `${stem.color}` : 'bg-white/20'}`} style={{ boxShadow: isActive ? `0 0 10px ${stem.shadow}, 0 0 20px ${stem.shadow}` : 'none' }}></div>
-                        <span className={`text-[8px] md:text-[9px] tracking-widest uppercase transition-colors ${isActive ? 'text-white font-bold' : 'text-white/30'}`}>{isActive ? 'ON' : 'OFF'}</span>
-                      </div>
-                      <span className="text-[8px] md:text-[10px] font-mono tracking-widest text-white/20 font-light">{stem.num}</span>
-                    </div>
-
-                    <div className="text-left relative z-10 w-full mt-auto">
-                      <span className={`text-xs md:text-sm lg:text-base font-modern tracking-[0.2em] transition-colors ${isActive ? 'text-white' : 'text-[#9ca3af] group-hover:text-white/80'}`}>
-                        {stem.name}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center gap-2 mt-4 relative z-10">
-            <span className="text-[9px] uppercase tracking-[0.3em] text-white/30 text-center">Scroll to explore</span>
-            <div className="w-[1px] h-12 bg-gradient-to-b from-white/30 to-transparent"></div>
           </div>
         </section>
 
@@ -850,7 +932,7 @@ export default function App() {
            <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-16 lg:gap-20 items-center">
               
               <div className="lg:col-span-7 flex flex-col justify-center">
-                  <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-8">01. THE MANIFESTO</h2>
+                  <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-8">02. THE MANIFESTO</h2>
                   <h3 className="font-modern text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-light text-white leading-tight md:leading-snug mb-10 relative z-10">
                     I build <span className="font-serif italic text-white/50 tracking-normal pr-2">immersive</span> sonic landscapes where technology meets raw emotion.
                   </h3>
@@ -899,7 +981,7 @@ export default function App() {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6 relative z-10">
               <div>
-                <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-4">02. DISCOGRAPHY</h2>
+                <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-4">03. DISCOGRAPHY</h2>
                 <h3 className="font-modern text-4xl md:text-6xl text-white font-light">Selected Works</h3>
               </div>
               <a href="https://open.spotify.com/intl-es/artist/1mc3f2GvIm1g6f61hVvyJt" target="_blank" rel="noreferrer" className="text-[10px] tracking-widest border-b border-white/20 pb-1 hover:text-white hover:border-[#9D4EDD] hover:text-[#9D4EDD] transition-all flex items-center gap-2 group">
@@ -976,6 +1058,156 @@ export default function App() {
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        {/* Interactive Mixer / The Builder Section */}
+        <section id="mixer" ref={mixerSectionRef} className="relative min-h-screen w-full flex flex-col items-center justify-between pt-32 pb-8 border-t border-white/5 bg-[#050505]/40 backdrop-blur-sm">
+          
+          <div className="flex flex-col items-center gap-3 mt-2 md:mt-4 px-6 relative z-10 text-center">
+            <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-2">04. THE BUILDER</h2>
+            <h3 className="font-modern text-3xl md:text-5xl font-light text-white tracking-tighter">
+              Interactive <span className="font-serif italic text-white/70">Mixer</span>
+            </h3>
+            <p className="text-xs text-[#9ca3af]/60 uppercase tracking-[0.2em] font-mono max-w-lg mt-1">
+              Desglosa mis producciones stem por stem. Modifica la mezcla y graba tu propia versión.
+            </p>
+          </div>
+
+          {!hasEntered ? (
+            <div className="flex-1 flex flex-col items-center justify-center relative z-10 min-h-[300px]">
+              {!mixerInView ? (
+                <div className="text-center">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/30 animate-pulse">Acércate para cargar el mezclador...</p>
+                </div>
+              ) : !mixerAudioLoaded ? (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[#9D4EDD]/10 animate-pulse"></div>
+                    <span className="text-[10px] text-[#E0AAFF] font-bold">{loadingProgress}%</span>
+                  </div>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">Descargando stems de alta calidad...</p>
+                </div>
+              ) : (
+                <button
+                  onClick={handleEnter}
+                  className="group relative px-10 py-5 overflow-hidden rounded-full border border-white/10 hover:border-[#9D4EDD]/50 transition-all duration-500 cursor-pointer shadow-2xl"
+                >
+                  <div className="absolute inset-0 w-0 transition-all duration-500 ease-out group-hover:w-full bg-[#9D4EDD]/10"></div>
+                  <span className="relative tracking-[0.3em] text-[#9ca3af] group-hover:text-white transition-colors text-xs uppercase flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5 text-[#9D4EDD]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    Activate Soundscape
+                  </span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className={`flex flex-col items-center justify-start w-full max-w-4xl px-6 pt-2 md:pt-4 flex-1 transition-opacity duration-1000 relative z-10 ${hasSaved ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
+              <div className="flex flex-col items-center gap-3 mb-8 px-6">
+                <div className={`flex items-center gap-1.5 p-1 px-1.5 rounded-full border transition-all duration-500 backdrop-blur-md ${hasSaved ? 'bg-[#9D4EDD]/20 border-[#9D4EDD]/50' : 'bg-[#050505]/40 border-white/10'}`}>
+                  
+                  <div className="flex items-center gap-2 px-2 py-1">
+                    <div className={`w-1.5 h-1.5 rounded-full ${isRecording && !isPaused ? 'bg-red-500 animate-pulse' : hasSaved ? 'bg-[#9D4EDD]' : 'bg-red-500/30'}`}></div>
+                    <span className={`text-[8px] md:text-[9px] tracking-widest ${hasSaved ? 'text-[#E0AAFF]' : 'text-white'}`}>
+                      {hasSaved ? 'SESSION EXPORTED' : isPaused ? `PAUSED ${formatTime(time)}` : `REC ${formatTime(time)}`}
+                    </span>
+                  </div>
+
+                  {!hasSaved && (
+                    <div className="flex items-center gap-1 border-l border-white/10 pl-1.5">
+                      <button
+                        onClick={handlePause}
+                        className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-[#9ca3af] hover:text-white"
+                        title={isPaused ? "Resume" : "Pause"}
+                      >
+                        {isPaused ? (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        ) : (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleStopAndSave}
+                        className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-[#9ca3af] hover:text-white group flex items-center gap-1.5"
+                        title="Stop & Download Mix"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                {hasSaved ? (
+                  <button 
+                    onClick={handleReset}
+                    className="text-[8px] uppercase tracking-[0.4em] text-[#9D4EDD] hover:text-[#E0AAFF] transition-colors text-center mt-1 border-b border-[#9D4EDD]/30 hover:border-[#E0AAFF]/50 pb-0.5 cursor-pointer backdrop-blur-sm bg-black/20"
+                  >
+                    START NEW SESSION
+                  </button>
+                ) : (
+                  <p className="text-[8px] uppercase tracking-[0.4em] text-white/30 text-center mt-1 backdrop-blur-sm bg-black/20 px-2 py-0.5 rounded">
+                    Interactive Audio Experience
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-end justify-center gap-2 h-12 md:h-16 mb-5 md:mb-8 w-full max-w-md">
+                {stemsConfig.map((stem, i) => (
+                  <div key={`vis-${stem.id}`} className="w-1/4 h-full flex items-end justify-center pb-2">
+                    <div 
+                      className={`w-1 rounded-full transition-all duration-500 ${trackStates[stem.id] ? `${stem.color} bar-anim drop-shadow-[0_0_10px_currentColor]` : 'bg-white/10 h-2'}`}
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    ></div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full">
+                {stemsConfig.map((stem) => {
+                  const isActive = trackStates[stem.id];
+                  return (
+                    <button
+                      key={stem.id}
+                      onClick={() => toggleTrack(stem.id)}
+                      className={`relative flex flex-col justify-between h-28 md:h-36 p-4 md:p-5 rounded-2xl transition-all duration-500 overflow-hidden group outline-none
+                        ${isActive 
+                          ? 'bg-[#050505]/90 pad-pressed scale-[0.98]' 
+                          : 'bg-[#0a0a0a]/40 pad-unpressed hover:bg-[#111]/60'
+                        }
+                      `}
+                    >
+                      <div className={`absolute inset-0 rounded-2xl border transition-colors duration-500 pointer-events-none ${isActive ? 'border-black/50' : 'border-white/5 group-hover:border-white/10'}`}></div>
+
+                      <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }}></div>
+
+                      <div 
+                        className={`absolute inset-0 opacity-0 transition-opacity duration-700 blur-2xl pointer-events-none ${isActive ? 'opacity-30' : 'group-hover:opacity-10'}`}
+                        style={{ backgroundColor: isActive ? stem.shadow : '#ffffff' }}
+                      ></div>
+                      
+                      <div className="flex justify-between items-start w-full relative z-10">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isActive ? `${stem.color}` : 'bg-white/20'}`} style={{ boxShadow: isActive ? `0 0 10px ${stem.shadow}, 0 0 20px ${stem.shadow}` : 'none' }}></div>
+                          <span className={`text-[8px] md:text-[9px] tracking-widest uppercase transition-colors ${isActive ? 'text-white font-bold' : 'text-white/30'}`}>{isActive ? 'ON' : 'OFF'}</span>
+                        </div>
+                        <span className="text-[8px] md:text-[10px] font-mono tracking-widest text-white/20 font-light">{stem.num}</span>
+                      </div>
+
+                      <div className="text-left relative z-10 w-full mt-auto">
+                        <span className={`text-xs md:text-sm lg:text-base font-modern tracking-[0.2em] transition-colors ${isActive ? 'text-white' : 'text-[#9ca3af] group-hover:text-white/80'}`}>
+                          {stem.name}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col items-center gap-2 mt-4 relative z-10">
+            <span className="text-[9px] uppercase tracking-[0.3em] text-white/30 text-center">Scroll to explore</span>
+            <div className="w-[1px] h-12 bg-gradient-to-b from-white/30 to-transparent"></div>
           </div>
         </section>
 
