@@ -25,6 +25,7 @@ export default function App() {
 
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [ctrlPreviewMode, setCtrlPreviewMode] = useState('analysis');
 
   const [trackStates, setTrackStates] = useState({
     ether: false,
@@ -705,7 +706,7 @@ export default function App() {
             <a href="#about" onClick={(e) => scrollTo(e, 'about')} className="hover:text-white transition-colors cursor-pointer">About</a>
             <a href="#ctrl" onClick={(e) => scrollTo(e, 'ctrl')} className="text-[#9D4EDD] hover:text-[#E0AAFF] transition-colors cursor-pointer flex items-center gap-1.5 font-bold group">
               <span className="w-1.5 h-1.5 rounded-full bg-[#9D4EDD] shadow-[0_0_8px_rgba(157,78,221,0.9)] animate-pulse"></span>
-              CTRL DAW
+              CTRL ANALYZER
             </a>
             <a href="#works" onClick={(e) => scrollTo(e, 'works')} className="hover:text-white transition-colors cursor-pointer">Selected Works</a>
           </div>
@@ -899,7 +900,7 @@ export default function App() {
            </div>
         </section>
 
-        {/* ── SECTION 02: CTRL — WEB AUDIO WORKSTATION ── */}
+        {/* ── SECTION 02: CTRL — EXACT SCREENSHOT-ACCURATE MASTERING TOOL ── */}
         <section id="ctrl" className="min-h-screen w-full flex items-center px-6 md:px-20 py-32 border-t border-white/5 relative z-10 bg-[#060608]/90 backdrop-blur-md overflow-hidden">
           {/* Ambient Glows */}
           <div className="absolute -top-32 right-0 w-[500px] h-[500px] bg-[#9D4EDD]/10 blur-[150px] pointer-events-none rounded-full"></div>
@@ -908,41 +909,44 @@ export default function App() {
           <div className="max-w-7xl mx-auto w-full">
             <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
               
-              {/* Left Column: Manifesto & Pitch */}
-              <div className="lg:col-span-7 flex flex-col justify-center">
+              {/* Left Column: Authentic Copy from 3.webp */}
+              <div className="lg:col-span-6 flex flex-col justify-center">
                 <div className="flex items-center gap-3 mb-6">
-                  <span className="text-[10px] tracking-[0.5em] text-[#9D4EDD]">02. FLAGSHIP SOFTWARE</span>
+                  <span className="text-[10px] tracking-[0.5em] text-[#9D4EDD]">02. FLAGSHIP AUDIO TOOL</span>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[8px] tracking-widest uppercase bg-[#9D4EDD]/15 text-[#E0AAFF] border border-[#9D4EDD]/30 font-mono">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954] animate-pulse"></span>
-                    v1.0 Live
+                    Online & Free
                   </span>
                 </div>
 
-                <h3 className="font-modern text-4xl md:text-6xl lg:text-7xl font-light text-white leading-tight mb-8">
-                  CTRL<span className="font-serif italic text-white/50 tracking-normal pl-2">Audio Workstation</span>
+                <h3 className="font-modern text-4xl md:text-6xl font-light text-white leading-tight mb-2">
+                  Free Spotify Loudness Checker.
                 </h3>
+                <h4 className="font-serif italic text-3xl md:text-5xl text-white/80 font-normal mb-8">
+                  Know your numbers. Take CTRL.
+                </h4>
 
-                <p className="text-xs md:text-sm tracking-wide leading-relaxed text-[#9ca3af] font-light max-w-2xl mb-10">
-                  The in-browser DAW engineered for high-precision music production. CTRL erases the barrier between native desktop audio workstations and the web, featuring sample-accurate multi-track playback, step sequencing, pattern arrangement, and low-latency audio capture — running directly in your browser with zero installation.
+                <p className="text-xs md:text-sm tracking-wide leading-relaxed text-[#9ca3af] font-light max-w-xl mb-8">
+                  Free audio analyzer — entirely in your browser. Measure integrated loudness (LUFS), True Peak (dBTP) with 4x oversampling, and Dynamic Range (LRA). Compare streaming penalties across Spotify, Apple Music, and YouTube with zero uploads and 100% client-side Web Audio DSP.
                 </p>
 
                 {/* Feature Pills */}
-                <div className="grid grid-cols-2 gap-3 mb-10 max-w-xl">
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
-                    <div className="text-[9px] font-mono tracking-widest text-[#E0AAFF] mb-1">01 // CLOCK</div>
-                    <div className="text-xs font-modern text-white">Sample-Accurate Engine</div>
+                <div className="grid grid-cols-2 gap-3 mb-8 max-w-lg font-mono text-[9px]">
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+                    <div className="tracking-widest text-[#E0AAFF] mb-1">01 // METERS</div>
+                    <div className="text-xs font-modern text-white">EBU R128 LUFS & True Peak</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
-                    <div className="text-[9px] font-mono tracking-widest text-[#E0AAFF] mb-1">02 // WORKFLOW</div>
-                    <div className="text-xs font-modern text-white">Multitrack Sequencing</div>
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+                    <div className="tracking-widest text-[#E0AAFF] mb-1">02 // STREAMING</div>
+                    <div className="text-xs font-modern text-white">Spotify & Apple Penalty</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
-                    <div className="text-[9px] font-mono tracking-widest text-[#E0AAFF] mb-1">03 // HARDWARE-LESS</div>
-                    <div className="text-xs font-modern text-white">Zero Install Required</div>
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+                    <div className="tracking-widest text-[#E0AAFF] mb-1">03 // SPECTRUM</div>
+                    <div className="text-xs font-modern text-white">Real-Time FFT Analyzer</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
-                    <div className="text-[9px] font-mono tracking-widest text-[#E0AAFF] mb-1">04 // EXPORT</div>
-                    <div className="text-xs font-modern text-white">Direct Stems & Mix Export</div>
+                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+                    <div className="tracking-widest text-[#E0AAFF] mb-1">04 // PRIVACY</div>
+                    <div className="text-xs font-modern text-white">100% Client-Side DSP</div>
                   </div>
                 </div>
 
@@ -954,7 +958,7 @@ export default function App() {
                     rel="noreferrer"
                     className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white text-xs tracking-[0.2em] uppercase font-bold transition-all duration-300 shadow-[0_0_30px_rgba(157,78,221,0.35)] hover:shadow-[0_0_50px_rgba(157,78,221,0.6)] hover:scale-[1.02]"
                   >
-                    <span>Launch CTRL Studio</span>
+                    <span>Launch CTRL Analyzer</span>
                     <span className="text-sm group-hover:translate-x-1 group-hover:-translate-y-0.5 transition-transform">↗</span>
                   </a>
 
@@ -969,61 +973,245 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Right Column: Interactive DAW Hardware/Sequencer Card */}
-              <div className="lg:col-span-5 relative">
-                <div className="relative rounded-2xl bg-[#0a0a0d] border border-white/10 p-6 shadow-2xl overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-[#9D4EDD]/[0.06] pointer-events-none"></div>
-
-                  {/* Header Window Bar */}
-                  <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/5 relative z-10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
-                      <span className="text-[9px] font-mono text-white/40 ml-2">CTRL_DAW_v1.0.SYS</span>
-                    </div>
-                    <span className="text-[8px] font-mono text-[#9D4EDD] tracking-widest uppercase">ENGINE READY</span>
+              {/* Right Column: Exact Replica of 2.webp & 3.webp UI */}
+              <div className="lg:col-span-6 relative">
+                {/* View Mode Switcher Header */}
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCtrlPreviewMode('analysis')}
+                      className={`text-[9px] font-mono tracking-wider uppercase px-3 py-1 rounded-full border transition-all ${
+                        ctrlPreviewMode === 'analysis'
+                          ? 'bg-[#9D4EDD]/20 text-[#E0AAFF] border-[#9D4EDD]/50 shadow-[0_0_12px_rgba(157,78,221,0.3)] font-bold'
+                          : 'bg-white/5 text-white/40 border-white/5 hover:text-white'
+                      }`}
+                    >
+                      • Analysis View
+                    </button>
+                    <button
+                      onClick={() => setCtrlPreviewMode('dropzone')}
+                      className={`text-[9px] font-mono tracking-wider uppercase px-3 py-1 rounded-full border transition-all ${
+                        ctrlPreviewMode === 'dropzone'
+                          ? 'bg-[#9D4EDD]/20 text-[#E0AAFF] border-[#9D4EDD]/50 shadow-[0_0_12px_rgba(157,78,221,0.3)] font-bold'
+                          : 'bg-white/5 text-white/40 border-white/5 hover:text-white'
+                      }`}
+                    >
+                      • Dropzone View
+                    </button>
                   </div>
+                  <span className="text-[8px] font-mono text-white/30 uppercase tracking-widest hidden sm:inline-block">LIVE UI DEMO</span>
+                </div>
 
-                  {/* Sequencer Patterns Preview */}
-                  <div className="space-y-3 relative z-10 mb-6 font-mono">
-                    {[
-                      { name: 'CH_01 // KICK & SUB', color: '#9D4EDD', bars: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0] },
-                      { name: 'CH_02 // SNARE & CLAP', color: '#3b82f6', bars: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0] },
-                      { name: 'CH_03 // HI-HAT ROLLS', color: '#ec4899', bars: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] },
-                      { name: 'CH_04 // SYNTH LEAD', color: '#E0AAFF', bars: [1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0] },
-                    ].map((ch, idx) => (
-                      <div key={idx} className="p-3 rounded-lg bg-black/60 border border-white/5">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-white/70 text-[8px] tracking-wider">{ch.name}</span>
-                          <span className="text-[8px] text-white/30">PAT_0{idx + 1}</span>
+                {/* ── CARD VIEW 1: EXACT 2.webp (Active Analysis UI) ── */}
+                {ctrlPreviewMode === 'analysis' && (
+                  <div className="relative rounded-3xl bg-[#060608] border border-white/10 p-5 md:p-6 shadow-[0_0_40px_rgba(157,78,221,0.12)] overflow-hidden font-mono">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-[#9D4EDD]/[0.04] pointer-events-none"></div>
+
+                    {/* Top Status Bar from 2.webp */}
+                    <div className="flex justify-between items-center pb-4 mb-4 border-b border-white/5 text-[9px] tracking-wider relative z-10">
+                      <span className="text-white/60">STATUS: <strong className="text-white font-normal">FREE PLAN</strong></span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-white/40">LIMIT: <strong className="text-[#f43f5e] font-bold">UNLIMITED (7 DAYS)</strong></span>
+                        <div className="flex items-center gap-1 border border-white/15 px-2.5 py-0.5 rounded-full text-white/70 text-[8px]">
+                          <span>🔑</span> ACTIVATE KEY
                         </div>
-                        <div className="flex gap-1">
-                          {ch.bars.map((active, step) => (
+                      </div>
+                    </div>
+
+                    {/* Track Header Card from 2.webp */}
+                    <div className="rounded-2xl bg-[#0b0b0f] border border-white/5 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 relative z-10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#14101e] border border-[#9D4EDD]/30 flex items-center justify-center text-[#c084fc] shrink-0">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                        </div>
+                        <div>
+                          <div className="text-white text-xs font-mono font-medium tracking-wide">Beginnings Bloom - V10 Master.wav</div>
+                          <div className="text-[8px] text-white/40 tracking-wider mt-0.5">DURATION: 05:52 • SIZE: 59.4 MB</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        <a 
+                          href="https://ctrl.napbak.studio" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-[10px] tracking-wider px-5 py-2 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(157,78,221,0.4)] transition-transform hover:scale-105"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                          <span>PLAY MASTER</span>
+                        </a>
+                        <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/40 text-xs">
+                          ↺
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Waveform & Spectrum Row from 2.webp */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 relative z-10">
+                      {/* Offline Waveform Card */}
+                      <div className="rounded-2xl bg-[#0b0b0f] border border-white/5 p-3 flex flex-col justify-between h-24">
+                        <div className="flex justify-between items-center text-[8px] tracking-wider text-white/40 mb-1">
+                          <span>OFFLINE WAVEFORM</span>
+                          <span className="text-[#a855f7] font-bold">03:55 / 05:52</span>
+                        </div>
+                        <div className="relative h-12 w-full flex items-center justify-between gap-[2px] px-1 overflow-hidden">
+                          {/* Playhead vertical marker */}
+                          <div className="absolute top-0 bottom-0 left-[68%] w-[2px] bg-[#E0AAFF] shadow-[0_0_8px_#c084fc] z-20"></div>
+                          {/* 40 Waveform bars */}
+                          {[25, 40, 60, 50, 85, 70, 95, 60, 45, 80, 75, 55, 85, 100, 70, 45, 75, 85, 95, 65, 55, 80, 90, 70, 50, 85, 65, 75, 95, 60, 45, 65, 50, 40, 30, 25, 20, 15, 10, 8].map((h, idx) => (
                             <div 
-                              key={step} 
-                              className={`flex-1 h-3.5 rounded-[2px] transition-all ${active ? 'opacity-90 shadow-[0_0_6px_currentColor]' : 'bg-white/5 opacity-25'}`}
+                              key={idx} 
+                              className="flex-1 rounded-full transition-colors" 
                               style={{ 
-                                backgroundColor: active ? ch.color : undefined,
-                                color: ch.color
+                                height: `${h}%`, 
+                                backgroundColor: idx <= 27 ? '#9D4EDD' : 'rgba(255, 255, 255, 0.2)' 
                               }}
                             ></div>
                           ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-                  {/* Card Bottom CTA */}
-                  <a 
-                    href="https://ctrl.napbak.studio" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="block w-full py-3.5 px-4 rounded-xl text-center text-[10px] font-mono tracking-[0.2em] uppercase text-white bg-white/5 hover:bg-[#9D4EDD] border border-white/10 hover:border-[#9D4EDD] transition-all duration-300 relative z-10"
-                  >
-                    Open in Full Studio Screen ↗
-                  </a>
-                </div>
+                      {/* Frequency Spectrum (FFT) Card */}
+                      <div className="rounded-2xl bg-[#0b0b0f] border border-white/5 p-3 flex flex-col justify-between h-24 relative overflow-hidden">
+                        <div className="flex justify-between items-center text-[8px] tracking-wider text-white/40 mb-1 relative z-10">
+                          <span>FREQUENCY SPECTRUM (FFT)</span>
+                          <span className="text-[#3b82f6] font-bold">20 Hz - 20 kHz</span>
+                        </div>
+                        <div className="relative h-12 w-full flex items-end justify-between gap-[2px] px-1 overflow-hidden">
+                          <div className="absolute inset-0 flex items-center justify-center text-[7px] text-white/30 tracking-widest uppercase z-20 pointer-events-none">
+                            HIT PLAY TO VIEW REAL-TIME SPECTRUM
+                          </div>
+                          {/* Spectral Curve Gradient */}
+                          {[80, 70, 65, 60, 55, 52, 48, 45, 42, 38, 35, 32, 30, 28, 25, 22, 20, 18, 15, 12, 10, 8, 6, 5].map((h, idx) => (
+                            <div 
+                              key={idx} 
+                              className="flex-1 rounded-t-sm bg-gradient-to-t from-[#9D4EDD]/30 via-[#7928CA]/50 to-[#3b82f6]" 
+                              style={{ height: `${h}%` }}
+                            ></div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3 Metrics Cards from 2.webp */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 relative z-10">
+                      {/* Integrated Loudness */}
+                      <div className="rounded-2xl bg-[#0b0b0f] border border-white/5 p-4 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-[8px] tracking-wider text-white/40 uppercase">
+                          <span>INTEGRATED LOUDNESS</span>
+                          <span className="text-white/20">ⓘ</span>
+                        </div>
+                        <div className="my-2">
+                          <span className="font-modern text-3xl md:text-4xl text-white font-bold tracking-tight">-11.4</span>
+                          <span className="text-xs text-white/40 font-mono ml-1.5 font-normal">LUFS</span>
+                        </div>
+                        <div className="text-[7px] text-white/30 uppercase tracking-wider">SPOTIFY TARGET: -14 LUFS</div>
+                      </div>
+
+                      {/* Max True Peak */}
+                      <div className="rounded-2xl bg-[#0b0b0f] border border-white/5 p-4 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-[8px] tracking-wider text-white/40 uppercase">
+                          <span>MAX TRUE PEAK (4X)</span>
+                          <span className="text-white/20">ⓘ</span>
+                        </div>
+                        <div className="my-2">
+                          <span className="font-modern text-3xl md:text-4xl text-white font-bold tracking-tight">-1.0</span>
+                          <span className="text-xs text-white/40 font-mono ml-1.5 font-normal">dBTP</span>
+                        </div>
+                        <div className="text-[7px] text-white/30 uppercase tracking-wider">SAFE LIMIT: -1.0 dBTP</div>
+                      </div>
+
+                      {/* Loudness Range */}
+                      <div className="rounded-2xl bg-[#0b0b0f] border border-white/5 p-4 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-[8px] tracking-wider text-white/40 uppercase">
+                          <span>LOUDNESS RANGE (LRA)</span>
+                          <span className="text-white/20">ⓘ</span>
+                        </div>
+                        <div className="my-2">
+                          <span className="font-modern text-3xl md:text-4xl text-white font-bold tracking-tight">3.4</span>
+                          <span className="text-xs text-white/40 font-mono ml-1.5 font-normal">LU</span>
+                        </div>
+                        <div className="text-[7px] text-white/30 uppercase tracking-wider">SQUASHED / LIMITED</div>
+                      </div>
+                    </div>
+
+                    {/* Bottom CTA to Full App */}
+                    <a 
+                      href="https://ctrl.napbak.studio" 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="block w-full py-3 px-4 rounded-xl text-center text-[9px] font-mono tracking-[0.2em] uppercase text-white bg-white/5 hover:bg-[#9D4EDD] border border-white/10 hover:border-[#9D4EDD] transition-all duration-300 relative z-10"
+                    >
+                      Open Full CTRL Studio ↗
+                    </a>
+                  </div>
+                )}
+
+                {/* ── CARD VIEW 2: EXACT 3.webp (Hero Dropzone UI) ── */}
+                {ctrlPreviewMode === 'dropzone' && (
+                  <div className="relative rounded-3xl bg-[#060608] border border-white/10 p-6 md:p-8 shadow-[0_0_40px_rgba(157,78,221,0.12)] overflow-hidden font-mono min-h-[380px] flex flex-col justify-between">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-[#9D4EDD]/[0.04] pointer-events-none"></div>
+
+                    {/* Technical HUD Corner Markers from 3.webp */}
+                    <div className="flex justify-between items-center text-[8px] text-white/30 tracking-widest relative z-10 mb-4">
+                      <span>[ CH:0 | SR:48k ]</span>
+                      <span className="text-[#a855f7] font-bold">STATUS: PRO SUBSCRIPTION</span>
+                      <span>[ TP:MAX | LUFS:I ]</span>
+                    </div>
+
+                    {/* Lateral Level Indicators from 3.webp */}
+                    <div className="absolute left-3 top-1/3 bottom-1/3 w-[2px] bg-white/5 flex flex-col justify-end">
+                      <div className="w-[3px] -left-[0.5px] relative h-6 bg-[#9D4EDD] shadow-[0_0_8px_#c084fc] rounded-full"></div>
+                    </div>
+                    <div className="absolute right-3 top-1/3 bottom-1/3 w-[2px] bg-white/5 flex flex-col justify-end">
+                      <div className="w-[3px] -left-[0.5px] relative h-6 bg-[#9D4EDD] shadow-[0_0_8px_#c084fc] rounded-full"></div>
+                    </div>
+
+                    {/* Center Content from 3.webp */}
+                    <div className="flex flex-col items-center justify-center text-center my-auto py-4 relative z-10">
+                      <h4 className="font-modern text-2xl md:text-3xl text-white font-light mb-1">
+                        Free Spotify Loudness Checker.
+                      </h4>
+                      <p className="font-serif italic text-lg md:text-xl text-white/70 mb-4">
+                        Know your numbers. Take CTRL.
+                      </p>
+                      
+                      <div className="text-[7px] text-[#a855f7] tracking-[0.25em] uppercase mb-6 max-w-xs leading-relaxed font-mono">
+                        FREE AUDIO ANALYZER — ENTIRELY IN YOUR BROWSER.<br />
+                        NO UPLOADS. NO SIGNUP. 100% CLIENT-SIDE.
+                      </div>
+
+                      {/* Circular Dropzone Reticle from 3.webp */}
+                      <a
+                        href="https://ctrl.napbak.studio"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group flex flex-col items-center justify-center cursor-pointer"
+                      >
+                        <div className="w-24 h-24 rounded-full border border-dashed border-[#9D4EDD]/40 group-hover:border-[#9D4EDD] bg-[#9D4EDD]/5 group-hover:bg-[#9D4EDD]/15 transition-all duration-500 flex items-center justify-center relative mb-3 shadow-[0_0_20px_rgba(157,78,221,0.15)] group-hover:scale-105">
+                          <div className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center text-white/60 group-hover:text-white text-xl">
+                            +
+                          </div>
+                        </div>
+                        <span className="text-[8px] tracking-[0.25em] uppercase text-white/70 group-hover:text-white transition-colors font-mono">
+                          DRAG AND DROP YOUR AUDIO FILE
+                        </span>
+                        <span className="text-[7px] tracking-widest uppercase text-white/30 font-mono mt-0.5">
+                          WAV, MP3, M4A, OGG
+                        </span>
+                      </a>
+                    </div>
+
+                    {/* Bottom HUD from 3.webp */}
+                    <div className="flex justify-between items-center text-[8px] text-white/20 tracking-widest relative z-10 mt-4 pt-3 border-t border-white/5">
+                      <span>[ SYNC:EXT ]</span>
+                      <a href="https://ctrl.napbak.studio" target="_blank" rel="noreferrer" className="text-[#a855f7] hover:underline">
+                        LAUNCH APP ↗
+                      </a>
+                      <span>[ OUT:1-2 ]</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -1124,7 +1312,7 @@ export default function App() {
           </h1>
           <div className="flex flex-wrap gap-6 text-[10px] tracking-widest uppercase text-[#9ca3af] items-center justify-center">
             <a href="https://ctrl.napbak.studio" target="_blank" rel="noreferrer" className="text-white hover:text-[#9D4EDD] transition-colors flex items-center gap-1 font-bold group">
-              CTRL DAW <span className="group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform text-[8px]">↗</span>
+              CTRL ANALYZER <span className="group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform text-[8px]">↗</span>
             </a>
             <div className="w-[1px] h-3 bg-white/10 hidden md:block"></div>
             <a href="https://www.instagram.com/napbak.studio" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Instagram</a>
