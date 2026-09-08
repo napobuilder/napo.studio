@@ -29,9 +29,52 @@
     <meta property="twitter:url" content="https://napbak.studio/">
     <meta property="twitter:title" content="Napbak | Creative Developer & Music Producer">
     <meta property="twitter:description" content="I build immersive sonic landscapes where technology meets raw emotion.">
-    <meta property="twitter:image" content="https://i.imgur.com/39HXelI.png">
+    <link rel="canonical" href="https://napbak.studio/">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://napbak.studio/#website",
+          "url": "https://napbak.studio/",
+          "name": "Napbak Studio",
+          "description": "Interactive audio portfolio of Napbak. Sound designer, creative developer, and music producer.",
+          "inLanguage": "en"
+        },
+        {
+          "@type": "Person",
+          "@id": "https://napbak.studio/#person",
+          "name": "Napbak",
+          "url": "https://napbak.studio/",
+          "jobTitle": "Creative Developer & Music Producer",
+          "sameAs": [
+            "https://ctrl.napbak.studio",
+            "https://open.spotify.com/intl-es/artist/1mc3f2GvIm1g6f61hVvyJt",
+            "https://www.instagram.com/napbak.studio",
+            "https://napbak.dev"
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
+    <noscript>
+      <div style="font-family: sans-serif; padding: 40px; color: #fff; background: #050505; min-height: 100vh;">
+        <h1>Napbak Studio — Creative Developer & Music Producer</h1>
+        <p>Interactive sonic landscapes where technology meets raw emotion. Sound design, sample-accurate web audio engines, and modern music production.</p>
+        <h2>Featured Projects</h2>
+        <ul>
+          <li><a href="https://ctrl.napbak.studio" style="color: #9D4EDD;">CTRL — Next-Gen Web Audio Workstation</a></li>
+          <li><a href="https://open.spotify.com/intl-es/artist/1mc3f2GvIm1g6f61hVvyJt" style="color: #9D4EDD;">Discography on Spotify</a></li>
+          <li><a href="https://napbak.dev" style="color: #9D4EDD;">Developer Hub</a></li>
+        </ul>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <!-- Cloudflare Web Analytics -->

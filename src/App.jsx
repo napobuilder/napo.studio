@@ -700,9 +700,13 @@ export default function App() {
         </div>
 
         <div className="absolute inset-0 hidden md:flex justify-center items-center pointer-events-none z-20">
-          <div className="flex gap-8 text-[10px] tracking-widest uppercase pointer-events-auto">
+          <div className="flex gap-6 lg:gap-8 text-[10px] tracking-widest uppercase pointer-events-auto items-center">
             <a href="#mixer" onClick={(e) => scrollTo(e, 'mixer')} className="hover:text-white transition-colors cursor-pointer">Mixer</a>
             <a href="#about" onClick={(e) => scrollTo(e, 'about')} className="hover:text-white transition-colors cursor-pointer">About</a>
+            <a href="#ctrl" onClick={(e) => scrollTo(e, 'ctrl')} className="text-[#9D4EDD] hover:text-[#E0AAFF] transition-colors cursor-pointer flex items-center gap-1.5 font-bold group">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#9D4EDD] shadow-[0_0_8px_rgba(157,78,221,0.9)] animate-pulse"></span>
+              CTRL DAW
+            </a>
             <a href="#works" onClick={(e) => scrollTo(e, 'works')} className="hover:text-white transition-colors cursor-pointer">Selected Works</a>
           </div>
         </div>
@@ -895,11 +899,142 @@ export default function App() {
            </div>
         </section>
 
+        {/* ── SECTION 02: CTRL — WEB AUDIO WORKSTATION ── */}
+        <section id="ctrl" className="min-h-screen w-full flex items-center px-6 md:px-20 py-32 border-t border-white/5 relative z-10 bg-[#060608]/90 backdrop-blur-md overflow-hidden">
+          {/* Ambient Glows */}
+          <div className="absolute -top-32 right-0 w-[500px] h-[500px] bg-[#9D4EDD]/10 blur-[150px] pointer-events-none rounded-full"></div>
+          <div className="absolute -bottom-32 left-0 w-[400px] h-[400px] bg-[#3b82f6]/5 blur-[120px] pointer-events-none rounded-full"></div>
+
+          <div className="max-w-7xl mx-auto w-full">
+            <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+              
+              {/* Left Column: Manifesto & Pitch */}
+              <div className="lg:col-span-7 flex flex-col justify-center">
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="text-[10px] tracking-[0.5em] text-[#9D4EDD]">02. FLAGSHIP SOFTWARE</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[8px] tracking-widest uppercase bg-[#9D4EDD]/15 text-[#E0AAFF] border border-[#9D4EDD]/30 font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954] animate-pulse"></span>
+                    v1.0 Live
+                  </span>
+                </div>
+
+                <h3 className="font-modern text-4xl md:text-6xl lg:text-7xl font-light text-white leading-tight mb-8">
+                  CTRL<span className="font-serif italic text-white/50 tracking-normal pl-2">Audio Workstation</span>
+                </h3>
+
+                <p className="text-xs md:text-sm tracking-wide leading-relaxed text-[#9ca3af] font-light max-w-2xl mb-10">
+                  The in-browser DAW engineered for high-precision music production. CTRL erases the barrier between native desktop audio workstations and the web, featuring sample-accurate multi-track playback, step sequencing, pattern arrangement, and low-latency audio capture — running directly in your browser with zero installation.
+                </p>
+
+                {/* Feature Pills */}
+                <div className="grid grid-cols-2 gap-3 mb-10 max-w-xl">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+                    <div className="text-[9px] font-mono tracking-widest text-[#E0AAFF] mb-1">01 // CLOCK</div>
+                    <div className="text-xs font-modern text-white">Sample-Accurate Engine</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+                    <div className="text-[9px] font-mono tracking-widest text-[#E0AAFF] mb-1">02 // WORKFLOW</div>
+                    <div className="text-xs font-modern text-white">Multitrack Sequencing</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+                    <div className="text-[9px] font-mono tracking-widest text-[#E0AAFF] mb-1">03 // HARDWARE-LESS</div>
+                    <div className="text-xs font-modern text-white">Zero Install Required</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+                    <div className="text-[9px] font-mono tracking-widest text-[#E0AAFF] mb-1">04 // EXPORT</div>
+                    <div className="text-xs font-modern text-white">Direct Stems & Mix Export</div>
+                  </div>
+                </div>
+
+                {/* Action CTAs */}
+                <div className="flex flex-wrap items-center gap-5">
+                  <a 
+                    href="https://ctrl.napbak.studio" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white text-xs tracking-[0.2em] uppercase font-bold transition-all duration-300 shadow-[0_0_30px_rgba(157,78,221,0.35)] hover:shadow-[0_0_50px_rgba(157,78,221,0.6)] hover:scale-[1.02]"
+                  >
+                    <span>Launch CTRL Studio</span>
+                    <span className="text-sm group-hover:translate-x-1 group-hover:-translate-y-0.5 transition-transform">↗</span>
+                  </a>
+
+                  <a 
+                    href="https://ctrl.napbak.studio" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-[10px] font-mono tracking-widest text-white/40 hover:text-white transition-colors"
+                  >
+                    ctrl.napbak.studio ↗
+                  </a>
+                </div>
+              </div>
+
+              {/* Right Column: Interactive DAW Hardware/Sequencer Card */}
+              <div className="lg:col-span-5 relative">
+                <div className="relative rounded-2xl bg-[#0a0a0d] border border-white/10 p-6 shadow-2xl overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-[#9D4EDD]/[0.06] pointer-events-none"></div>
+
+                  {/* Header Window Bar */}
+                  <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/5 relative z-10">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
+                      <span className="text-[9px] font-mono text-white/40 ml-2">CTRL_DAW_v1.0.SYS</span>
+                    </div>
+                    <span className="text-[8px] font-mono text-[#9D4EDD] tracking-widest uppercase">ENGINE READY</span>
+                  </div>
+
+                  {/* Sequencer Patterns Preview */}
+                  <div className="space-y-3 relative z-10 mb-6 font-mono">
+                    {[
+                      { name: 'CH_01 // KICK & SUB', color: '#9D4EDD', bars: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0] },
+                      { name: 'CH_02 // SNARE & CLAP', color: '#3b82f6', bars: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0] },
+                      { name: 'CH_03 // HI-HAT ROLLS', color: '#ec4899', bars: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] },
+                      { name: 'CH_04 // SYNTH LEAD', color: '#E0AAFF', bars: [1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0] },
+                    ].map((ch, idx) => (
+                      <div key={idx} className="p-3 rounded-lg bg-black/60 border border-white/5">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-white/70 text-[8px] tracking-wider">{ch.name}</span>
+                          <span className="text-[8px] text-white/30">PAT_0{idx + 1}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          {ch.bars.map((active, step) => (
+                            <div 
+                              key={step} 
+                              className={`flex-1 h-3.5 rounded-[2px] transition-all ${active ? 'opacity-90 shadow-[0_0_6px_currentColor]' : 'bg-white/5 opacity-25'}`}
+                              style={{ 
+                                backgroundColor: active ? ch.color : undefined,
+                                color: ch.color
+                              }}
+                            ></div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Card Bottom CTA */}
+                  <a 
+                    href="https://ctrl.napbak.studio" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="block w-full py-3.5 px-4 rounded-xl text-center text-[10px] font-mono tracking-[0.2em] uppercase text-white bg-white/5 hover:bg-[#9D4EDD] border border-white/10 hover:border-[#9D4EDD] transition-all duration-300 relative z-10"
+                  >
+                    Open in Full Studio Screen ↗
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
         <section id="works" className="min-h-screen w-full px-6 md:px-20 py-32 border-t border-white/5 relative z-10 bg-[#050505]/80 backdrop-blur-md">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6 relative z-10">
               <div>
-                <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-4">02. DISCOGRAPHY</h2>
+                <h2 className="text-[10px] tracking-[0.5em] text-[#9D4EDD] mb-4">03. DISCOGRAPHY</h2>
                 <h3 className="font-modern text-4xl md:text-6xl text-white font-light">Selected Works</h3>
               </div>
               <a href="https://open.spotify.com/intl-es/artist/1mc3f2GvIm1g6f61hVvyJt" target="_blank" rel="noreferrer" className="text-[10px] tracking-widest border-b border-white/20 pb-1 hover:text-white hover:border-[#9D4EDD] hover:text-[#9D4EDD] transition-all flex items-center gap-2 group">
@@ -987,7 +1122,11 @@ export default function App() {
               onClick={() => setIsDotStolen(false)}
             >.</span><span className="font-serif italic text-white/70 tracking-normal">studio</span><span className="animate-pulse text-white/30 font-mono ml-1">_</span>
           </h1>
-          <div className="flex gap-6 text-[10px] tracking-widest uppercase text-[#9ca3af] items-center">
+          <div className="flex flex-wrap gap-6 text-[10px] tracking-widest uppercase text-[#9ca3af] items-center justify-center">
+            <a href="https://ctrl.napbak.studio" target="_blank" rel="noreferrer" className="text-white hover:text-[#9D4EDD] transition-colors flex items-center gap-1 font-bold group">
+              CTRL DAW <span className="group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform text-[8px]">↗</span>
+            </a>
+            <div className="w-[1px] h-3 bg-white/10 hidden md:block"></div>
             <a href="https://www.instagram.com/napbak.studio" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Instagram</a>
             <a href="https://open.spotify.com/intl-es/artist/1mc3f2GvIm1g6f61hVvyJt" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Spotify</a>
             <div className="w-[1px] h-3 bg-white/10 hidden md:block"></div>
