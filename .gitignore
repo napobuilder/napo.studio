@@ -25,4 +25,6 @@ dist-ssr
 
 # Local workspace repos
 NapbakStudio-lab/
+Napbak-CTRL/
+NapbakStudio-CTRL/
 *.webp
