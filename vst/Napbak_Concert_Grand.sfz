@@ -1,0 +1,48 @@
+// ==================================================================
+// NAPBAK CONCERT GRAND PIANO - UNIVERSAL SFZ INSTRUMENT
+// Compatible with:
+// - FL Studio (DirectWave)
+// - Ableton Live / Logic Pro / Reaper / Studio One / Cubase
+// ==================================================================
+
+<control>
+default_path=
+
+<global>
+ampeg_attack=0.001
+ampeg_decay=4.0
+ampeg_sustain=0
+ampeg_release=0.8
+
+<group>
+<region> sample=Samples/A0.mp3 pitch_keycenter=21 lokey=21 hikey=22
+<region> sample=Samples/C1.mp3 pitch_keycenter=24 lokey=23 hikey=25
+<region> sample=Samples/Eb1.mp3 pitch_keycenter=27 lokey=26 hikey=28
+<region> sample=Samples/Gb1.mp3 pitch_keycenter=30 lokey=29 hikey=31
+<region> sample=Samples/A1.mp3 pitch_keycenter=33 lokey=32 hikey=34
+<region> sample=Samples/C2.mp3 pitch_keycenter=36 lokey=35 hikey=37
+<region> sample=Samples/Eb2.mp3 pitch_keycenter=39 lokey=38 hikey=40
+<region> sample=Samples/Gb2.mp3 pitch_keycenter=42 lokey=41 hikey=43
+<region> sample=Samples/A2.mp3 pitch_keycenter=45 lokey=44 hikey=46
+<region> sample=Samples/C3.mp3 pitch_keycenter=48 lokey=47 hikey=49
+<region> sample=Samples/Eb3.mp3 pitch_keycenter=51 lokey=50 hikey=52
+<region> sample=Samples/Gb3.mp3 pitch_keycenter=54 lokey=53 hikey=55
+<region> sample=Samples/A3.mp3 pitch_keycenter=57 lokey=56 hikey=58
+<region> sample=Samples/C4.mp3 pitch_keycenter=60 lokey=59 hikey=61
+<region> sample=Samples/Eb4.mp3 pitch_keycenter=63 lokey=62 hikey=64
+<region> sample=Samples/Gb4.mp3 pitch_keycenter=66 lokey=65 hikey=67
+<region> sample=Samples/A4.mp3 pitch_keycenter=69 lokey=68 hikey=70
+<region> sample=Samples/C5.mp3 pitch_keycenter=72 lokey=71 hikey=73
+<region> sample=Samples/Eb5.mp3 pitch_keycenter=75 lokey=74 hikey=76
+<region> sample=Samples/Gb5.mp3 pitch_keycenter=78 lokey=77 hikey=79
+<region> sample=Samples/A5.mp3 pitch_keycenter=81 lokey=80 hikey=82
+<region> sample=Samples/C6.mp3 pitch_keycenter=84 lokey=83 hikey=85
+<region> sample=Samples/Eb6.mp3 pitch_keycenter=87 lokey=86 hikey=88
+<region> sample=Samples/Gb6.mp3 pitch_keycenter=90 lokey=89 hikey=91
+<region> sample=Samples/A6.mp3 pitch_keycenter=93 lokey=92 hikey=94
+<region> sample=Samples/C7.mp3 pitch_keycenter=96 lokey=95 hikey=97
+<region> sample=Samples/Eb7.mp3 pitch_keycenter=99 lokey=98 hikey=100
+<region> sample=Samples/Gb7.mp3 pitch_keycenter=102 lokey=101 hikey=103
+<region> sample=Samples/A7.mp3 pitch_keycenter=105 lokey=104 hikey=106
+<region> sample=Samples/C8.mp3 pitch_keycenter=108 lokey=107 hikey=108
+

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DecentSampler minVersion="1.0.0">
+  <!-- Napbak Concert Grand Piano VST Preset -->
+  <!-- Designed for FL Studio, Ableton Live, Logic Pro, Reaper, Cubase & Studio One -->
+  <ui width="812" height="375" layoutMode="relative" bgMode="color" bgColor="FF070707">
+    <tab name="main">
+      <label x="40" y="25" width="400" height="30" text="NAPBAK CONCERT GRAND" fontSize="20" textColor="FFFFFFFF" />
+      <label x="40" y="50" width="400" height="20" text="Acoustic Grand Piano // Physical Modeling DSP" fontSize="11" textColor="FF9D4EDD" />
+
+      <labeled-knob x="100" y="110" width="110" height="120" textSize="12" textColor="FFFFFFFF"
+                    trackForegroundColor="FF9D4EDD" trackBackgroundColor="22FFFFFF"
+                    label="VOLUME" type="float" minValue="0" maxValue="1" value="0.85">
+        <binding type="amp" level="instrument" position="0" parameter="AMP_VOLUME" />
+      </labeled-knob>
+
+      <labeled-knob x="240" y="110" width="110" height="120" textSize="12" textColor="FFFFFFFF"
+                    trackForegroundColor="FFE0AAFF" trackBackgroundColor="22FFFFFF"
+                    label="REVERB" type="float" minValue="0" maxValue="1" value="0.35">
+        <binding type="effect" level="instrument" position="0" parameter="FX_REVERB_WET_LEVEL" />
+      </labeled-knob>
+
+      <labeled-knob x="380" y="110" width="110" height="120" textSize="12" textColor="FFFFFFFF"
+                    trackForegroundColor="FF9D4EDD" trackBackgroundColor="22FFFFFF"
+                    label="WARMTH" type="float" minValue="500" maxValue="18000" value="13000">
+        <binding type="effect" level="instrument" position="1" parameter="FX_FILTER_FREQUENCY" />
+      </labeled-knob>
+
+      <labeled-knob x="520" y="110" width="110" height="120" textSize="12" textColor="FFFFFFFF"
+                    trackForegroundColor="FFE0AAFF" trackBackgroundColor="22FFFFFF"
+                    label="RELEASE" type="float" minValue="0.1" maxValue="3.0" value="0.8">
+        <binding type="amp" level="instrument" position="0" parameter="ENV_RELEASE" />
+      </labeled-knob>
+    </tab>
+  </ui>
+
+  <groups>
+    <group ampVelTrack="1.0">
+      <sample rootNote="21" loNote="21" hiNote="22" path="Samples/A0.mp3" />
+      <sample rootNote="24" loNote="23" hiNote="25" path="Samples/C1.mp3" />
+      <sample rootNote="27" loNote="26" hiNote="28" path="Samples/Eb1.mp3" />
+      <sample rootNote="30" loNote="29" hiNote="31" path="Samples/Gb1.mp3" />
+      <sample rootNote="33" loNote="32" hiNote="34" path="Samples/A1.mp3" />
+      <sample rootNote="36" loNote="35" hiNote="37" path="Samples/C2.mp3" />
+      <sample rootNote="39" loNote="38" hiNote="40" path="Samples/Eb2.mp3" />
+      <sample rootNote="42" loNote="41" hiNote="43" path="Samples/Gb2.mp3" />
+      <sample rootNote="45" loNote="44" hiNote="46" path="Samples/A2.mp3" />
+      <sample rootNote="48" loNote="47" hiNote="49" path="Samples/C3.mp3" />
+      <sample rootNote="51" loNote="50" hiNote="52" path="Samples/Eb3.mp3" />
+      <sample rootNote="54" loNote="53" hiNote="55" path="Samples/Gb3.mp3" />
+      <sample rootNote="57" loNote="56" hiNote="58" path="Samples/A3.mp3" />
+      <sample rootNote="60" loNote="59" hiNote="61" path="Samples/C4.mp3" />
+      <sample rootNote="63" loNote="62" hiNote="64" path="Samples/Eb4.mp3" />
+      <sample rootNote="66" loNote="65" hiNote="67" path="Samples/Gb4.mp3" />
+      <sample rootNote="69" loNote="68" hiNote="70" path="Samples/A4.mp3" />
+      <sample rootNote="72" loNote="71" hiNote="73" path="Samples/C5.mp3" />
+      <sample rootNote="75" loNote="74" hiNote="76" path="Samples/Eb5.mp3" />
+      <sample rootNote="78" loNote="77" hiNote="79" path="Samples/Gb5.mp3" />
+      <sample rootNote="81" loNote="80" hiNote="82" path="Samples/A5.mp3" />
+      <sample rootNote="84" loNote="83" hiNote="85" path="Samples/C6.mp3" />
+      <sample rootNote="87" loNote="86" hiNote="88" path="Samples/Eb6.mp3" />
+      <sample rootNote="90" loNote="89" hiNote="91" path="Samples/Gb6.mp3" />
+      <sample rootNote="93" loNote="92" hiNote="94" path="Samples/A6.mp3" />
+      <sample rootNote="96" loNote="95" hiNote="97" path="Samples/C7.mp3" />
+      <sample rootNote="99" loNote="98" hiNote="100" path="Samples/Eb7.mp3" />
+      <sample rootNote="102" loNote="101" hiNote="103" path="Samples/Gb7.mp3" />
+      <sample rootNote="105" loNote="104" hiNote="106" path="Samples/A7.mp3" />
+      <sample rootNote="108" loNote="107" hiNote="108" path="Samples/C8.mp3" />
+    </group>
+  </groups>
+
+  <effects>
+    <effect type="reverb" wetLevel="0.35" />
+    <effect type="lowpass" frequency="13000" />
+  </effects>
+</DecentSampler>
