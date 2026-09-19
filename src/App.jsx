@@ -10,7 +10,7 @@ let globalTrackGains    = {};     // Nodos de volumen individuales por pista
 let globalAudioBuffers  = {};     // Archivos decodificados en RAM
 let globalBufferSources = {};     // Reproductores de los buffers
 
-export default function App() {
+export default function App({ onNavigate }) {
   const [hasEntered, setHasEntered] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false); // Nuevo estado de carga
   const [loadingProgress, setLoadingProgress] = useState(0); // Porcentaje
@@ -388,6 +388,16 @@ export default function App() {
     document.body.removeChild(textArea);
   };
 
+  const handleNavigate = (e, path) => {
+    e.preventDefault();
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      window.history.pushState({}, '', path);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  };
+
   // ── 2. INICIO Y DISPARO SIMULTÁNEO (SYNC MÓVIL PERFECTO) ──────────
   const handleEnter = () => {
     if (!isLoaded) return;
@@ -709,6 +719,7 @@ export default function App() {
               CTRL ANALYZER
             </a>
             <a href="#works" onClick={(e) => scrollTo(e, 'works')} className="hover:text-white transition-colors cursor-pointer">Selected Works</a>
+            <a href="/blog" onClick={(e) => handleNavigate(e, '/blog')} className="hover:text-white transition-colors cursor-pointer">Blog</a>
           </div>
         </div>
 
@@ -1318,9 +1329,7 @@ export default function App() {
             <a href="https://www.instagram.com/napbak.studio" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Instagram</a>
             <a href="https://open.spotify.com/intl-es/artist/1mc3f2GvIm1g6f61hVvyJt" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Spotify</a>
             <div className="w-[1px] h-3 bg-white/10 hidden md:block"></div>
-            <a href="https://napbak.dev" target="_blank" rel="noreferrer" className="text-[#9D4EDD] hover:text-[#E0AAFF] transition-colors flex items-center gap-1 group">
-              DEV HUB <span className="group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform text-[8px]">↗</span>
-            </a>
+            <a href="/blog" onClick={(e) => handleNavigate(e, '/blog')} className="text-[#9D4EDD] hover:text-[#E0AAFF] transition-colors">BLOG</a>
           </div>
           <p className="text-[9px] tracking-widest text-white/20 mt-8">© {new Date().getFullYear()} ALL RIGHTS RESERVED.</p>
         </footer>
