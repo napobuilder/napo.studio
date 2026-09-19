@@ -326,6 +326,58 @@ export default function BlogPost({ slug, onNavigate }) {
                   </div>
                 );
 
+              case 'course_cta':
+                return (
+                  <div key={idx} className="my-10 rounded-2xl overflow-hidden border border-[#9D4EDD]/50 shadow-[0_0_60px_rgba(157,78,221,0.15)]">
+                    {/* Header stripe */}
+                    <div className="bg-gradient-to-r from-[#9D4EDD] to-[#6d28d9] px-6 sm:px-8 py-4 flex items-center justify-between">
+                      <span className="text-[9px] tracking-[0.3em] uppercase text-white/80 font-bold">WORKSHOP EN VIVO</span>
+                      {block.badge && (
+                        <span className="text-[9px] tracking-widest uppercase bg-white/20 text-white px-3 py-1 rounded-full font-bold backdrop-blur-sm">
+                          {block.badge}
+                        </span>
+                      )}
+                    </div>
+                    {/* Body */}
+                    <div className="bg-gradient-to-br from-[#100820] to-[#080808] px-6 sm:px-8 py-8">
+                      <h3 className="font-modern text-2xl sm:text-3xl text-white font-semibold mb-2 leading-tight">
+                        {block.title}
+                      </h3>
+                      <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-xl">
+                        {block.description}
+                      </p>
+                      {/* Includes list */}
+                      {block.includes && (
+                        <ul className="mb-8 space-y-2.5">
+                          {block.includes.map((item, i) => (
+                            <li key={i} className="flex items-center gap-3 text-xs text-gray-300">
+                              <span className="w-5 h-5 rounded-full bg-[#9D4EDD]/20 border border-[#9D4EDD]/40 flex items-center justify-center text-[#E0AAFF] shrink-0 text-[10px]">✓</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {/* Price + CTA */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <a
+                          href={block.url || 'mailto:hola@napbak.studio'}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-7 py-3.5 rounded-full bg-[#9D4EDD] hover:bg-[#b05eed] text-white text-xs tracking-widest uppercase transition-all shadow-[0_0_25px_rgba(157,78,221,0.5)] hover:shadow-[0_0_35px_rgba(157,78,221,0.7)] font-bold whitespace-nowrap"
+                        >
+                          {block.cta || 'Quiero entrar →'}
+                        </a>
+                        {block.price && (
+                          <div>
+                            <p className="text-white text-xl font-light font-modern">{block.price}</p>
+                            {block.priceNote && <p className="text-[10px] text-gray-500">{block.priceNote}</p>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+
               default:
                 return null;
             }

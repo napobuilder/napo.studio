@@ -1,5 +1,105 @@
 export const POSTS = [
   {
+    slug: 'por-que-tu-beat-suena-pequeno-en-spotify',
+    title: '¿Por qué tu beat suena pequeño en Spotify aunque en tus audífonos suena fuego?',
+    subtitle: 'Lo que nadie te explicó sobre mezcla y mastering — y por qué es más sencillo de resolver de lo que crees.',
+    date: '2026-09-19',
+    readTime: '5 min de lectura',
+    author: 'Napbak',
+    tags: ['Producción', 'Mezcla', 'Mastering', 'Beatmakers', 'Spotify'],
+    excerpt: 'Tu beat en el DAW suena con cuerpo, con graves que retumban y una energía que te emociona. Lo subes a Spotify. Lo escuchas en tu celular. Y de repente suena como grabado con un micrófono de laptop en una habitación vacía. Esto tiene explicación, y no es mala suerte.',
+    cover: 'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?auto=format&fit=crop&w=1200&q=80',
+    content: [
+      {
+        type: 'paragraph',
+        text: 'Llevas horas en tu beat. El kick pega, el 808 tiene graves que mueven el cuarto, la melodía está bien balanceada. Le das play en tus audífonos y dices: "esto ya está". Lo subes a Spotify, lo mandas al grupo de WhatsApp, alguien lo escucha en su teléfono — y suena como si le hubieran quitado el alma. Sin graves. Sin impacto. Sin pegada. ¿Qué pasó?'
+      },
+      {
+        type: 'callout',
+        title: 'No es tu beat. Es el proceso que falta después.',
+        text: 'Producir la música es una cosa. Preparar esa música para que sobreviva el viaje hacia los oídos de otra persona — en un teléfono barato, en un parlante Bluetooth, en unos audífonos de $15 — es otra completamente diferente. Eso se llama mezcla y mastering. Y la mayoría de beatmakers nunca lo aprende.'
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Imagínate esto:'
+      },
+      {
+        type: 'paragraph',
+        text: 'Preparas una comida increíble. La temperatura perfecta, los ingredientes exactos. Pero la metes en un envase malo y la mandas a domicilio. Cuando llega, está fría y aplastada. La comida era buena. El problema fue el empaque y el transporte. Con el audio pasa exactamente lo mismo.'
+      },
+      {
+        type: 'paragraph',
+        text: 'Tu DAW es la cocina. El master final — el archivo que sube a Spotify — es el envase. **Si el envase no está bien preparado, la música llega mal.** Sin importar qué tan bueno sea tu beat adentro.'
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Entonces, ¿qué está pasando exactamente?'
+      },
+      {
+        type: 'paragraph',
+        text: 'Cuando Spotify recibe tu canción, le hace ajustes automáticos de volumen para que no suene más alto ni más bajo que cualquier otro artista en la plataforma. Es como un árbitro de volumen. El problema: si tu track está demasiado "apretado" (con demasiada compresión, sin espacio dinámico), cuando Spotify le baja el volumen para igualarlo... se achata. Pierde todo. Se oye plano.'
+      },
+      {
+        type: 'list',
+        items: [
+          '**Los graves desaparecen** porque compiten entre sí — kick, 808 y bajo pisándose al mismo tiempo sin que nadie los haya organizado.',
+          '**El vocal o la melodía se pierde** porque está enterrada debajo de capas de samples sin balancear.',
+          '**Suena más bajo que todas las demás canciones** porque tu track tiene picos de volumen que Spotify penaliza hacia abajo.',
+          '**En auriculares baratos o en un teléfono suena completamente diferente** a como sonaba en tu cuarto de producción.'
+        ]
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Y no es que seas malo produciendo. Es que nadie te enseñó esto.'
+      },
+      {
+        type: 'paragraph',
+        text: 'La mezcla y el mastering son las dos etapas que convierten una producción en un producto profesional listo para el mundo. Muchos beatmakers las saltan porque no saben que existen, o porque creen que son demasiado técnicas y complicadas. No lo son — cuando alguien te las muestra en la práctica, con tu propia música, en tiempo real.'
+      },
+      {
+        type: 'paragraph',
+        text: 'Yo uso una herramienta que se llama **CTRL** para mostrarle a los productores exactamente qué les pasa a sus canciones antes de subirlas. Sin necesidad de saber de ingeniería. Sin cursos de 40 horas. Le arrastras tu canción a CTRL y te muestra en segundos cómo va a sonar en Spotify, en un iPhone, en un altavoz Bluetooth. Qué está fallando y dónde.'
+      },
+      {
+        type: 'callout',
+        title: '¿Cuántas canciones has subido que sonaban bien en tu cuarto pero mal en el mundo real?',
+        text: 'Cada canción que subes sin revisar es una oportunidad perdida. No porque sea mala — sino porque llegó mal empacada.'
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Lo que vas a aprender si entras al Workshop'
+      },
+      {
+        type: 'paragraph',
+        text: 'Esta semana abro un **Workshop en Vivo** donde voy a trabajar estos temas desde cero, con sesiones reales, en tiempo real. No teoría abstracta. Vamos a tomar beats — los tuyos si me los mandas — y los vamos a procesar, analizar y preparar para streaming juntos. Al final vas a tener un flujo de trabajo que puedes replicar en cada producción que hagas de ahora en adelante.'
+      },
+      {
+        type: 'course_cta',
+        badge: 'Esta semana',
+        title: 'Workshop: Mezcla & Mastering para Productores Modernos',
+        description: 'Un workshop en vivo donde aprenderás a preparar tus beats para Spotify, Apple Music y el resto del mundo. Sin jerga innecesaria. Con tu música real. Con CTRL incluido para que puedas escuchar exactamente qué está pasando con tu audio en tiempo real.',
+        includes: [
+          'Sesión en vivo + grabación para repasar cuando quieras',
+          'Flujo de trabajo paso a paso: mezcla → master → verificación',
+          'CTRL Pro incluido durante el workshop para que lo uses en tiempo real',
+          'Análisis de beats enviados por los participantes',
+          'Checklist descargable: "Antes de subir tu canción a Spotify"',
+          'Canal de Discord privado con seguimiento post-workshop'
+        ],
+        price: '$27 USD',
+        priceNote: 'Precio de lanzamiento. Sube después del workshop.',
+        cta: 'Reservar mi lugar →',
+        url: 'mailto:hola@napbak.studio?subject=Workshop Mezcla y Mastering'
+      }
+    ]
+  },
+
+  {
+
     slug: 'ctrl-vs-youlean-loudness-meter-que-medidor-necesitas',
     title: 'CTRL vs Youlean Loudness Meter: ¿Cuál necesitas realmente en tu flujo de trabajo?',
     subtitle: 'Una comparativa honesta entre el medidor gratuito de referencia de la industria y el analizador web con simulación DSP en tiempo real. Sin afiliaciones, sin humo.',
