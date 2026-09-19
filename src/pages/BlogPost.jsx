@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { POSTS } from '../content/posts.js';
 import { ArrowLeft, Clock, Tag, Share2, Check, Sparkles, Sliders, ExternalLink } from 'lucide-react';
 
 export default function BlogPost({ slug, onNavigate }) {
   const [copied, setCopied] = useState(false);
+  const [email, setEmail] = useState('');
+  const [formStatus, setFormStatus] = useState('idle'); // idle | sending | success | error
   const post = POSTS.find(p => p.slug === slug);
 
   const handleLinkClick = (e, path) => {
@@ -213,6 +215,38 @@ export default function BlogPost({ slug, onNavigate }) {
                   </div>
                 );
 
+              case 'comparison_table':
+                return (
+                  <div key={idx} className="my-8 overflow-x-auto rounded-xl border border-white/10">
+                    <table className="w-full text-xs font-mono min-w-[480px]">
+                      <thead>
+                        <tr className="bg-white/5 border-b border-white/10">
+                          {block.headers.map((h, i) => (
+                            <th key={i} className={`px-4 py-3 text-left tracking-widest uppercase text-[10px] ${
+                              i === 0 ? 'text-gray-400' : i === 1 ? 'text-gray-300' : 'text-[#E0AAFF]'
+                            }`}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {block.rows.map((row, ri) => (
+                          <tr key={ri} className={`border-b border-white/5 ${
+                            ri % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.02]'
+                          }`}>
+                            {row.map((cell, ci) => (
+                              <td key={ci} className={`px-4 py-2.5 ${
+                                ci === 0 ? 'text-gray-300' :
+                                ci === 1 ? 'text-gray-400' :
+                                'text-[#E0AAFF] font-semibold'
+                              }`}>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+
               default:
                 return null;
             }
@@ -238,6 +272,65 @@ export default function BlogPost({ slug, onNavigate }) {
               Productor musical con más de 10 años en sesiones de estudio y desarrollador de software de audio (Web Audio API, DSP, C++, React). Creador de CTRL Analyzer.
             </p>
           </div>
+        </div>
+
+        {/* Newsletter Formspree */}
+        <div className="mt-12 p-6 sm:p-8 rounded-2xl border border-[#9D4EDD]/25 bg-gradient-to-br from-[#0f0b17] to-[#080808]">
+          <div className="text-center mb-5">
+            <span className="text-[9px] tracking-[0.3em] uppercase text-[#9D4EDD] font-bold block mb-2">TECHNICAL JOURNAL</span>
+            <h4 className="font-modern text-lg text-white font-light mb-1">Próximo artículo, directo a tu inbox</h4>
+            <p className="text-xs text-gray-500 font-light">Sin spam. Solo cuando publique algo que valga tu tiempo.</p>
+          </div>
+
+          {formStatus === 'success' ? (
+            <div className="flex flex-col items-center gap-2 py-3">
+              <span className="text-2xl">✓</span>
+              <p className="text-sm text-[#E0AAFF] font-light">Suscrito. Te aviso en el próximo artículo.</p>
+            </div>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!email) return;
+                setFormStatus('sending');
+                try {
+                  const res = await fetch('https://formspree.io/f/moevjjpq', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ email, _subject: 'Nueva suscripción - Napbak Blog' })
+                  });
+                  if (res.ok) {
+                    setFormStatus('success');
+                    setEmail('');
+                  } else {
+                    setFormStatus('error');
+                  }
+                } catch {
+                  setFormStatus('error');
+                }
+              }}
+              className="flex flex-col sm:flex-row gap-3"
+            >
+              <input
+                type="email"
+                required
+                placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setFormStatus('idle'); }}
+                className="flex-1 bg-white/5 border border-white/10 hover:border-[#9D4EDD]/40 focus:border-[#9D4EDD]/70 outline-none rounded-full px-5 py-2.5 text-xs text-white placeholder:text-gray-600 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={formStatus === 'sending'}
+                className="px-6 py-2.5 rounded-full bg-[#9D4EDD] hover:bg-[#b05eed] disabled:opacity-50 text-white text-[10px] tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(157,78,221,0.3)] whitespace-nowrap"
+              >
+                {formStatus === 'sending' ? 'Enviando...' : 'Suscribirme'}
+              </button>
+            </form>
+          )}
+          {formStatus === 'error' && (
+            <p className="text-[10px] text-red-400 text-center mt-2">Algo falló. Intenta de nuevo o escríbeme directo.</p>
+          )}
         </div>
 
         {/* Back Link */}
