@@ -235,7 +235,7 @@ export default function BlogPost({ slug, onNavigate }) {
               Napbak
             </h4>
             <p className="text-xs text-gray-400 font-light leading-relaxed">
-              Productor de audio e ingeniero con más de 10 años en sesiones de estudio + Desarrollador de software de audio (Web Audio API, DSP, C++, React). Creador de CTRL Analyzer.
+              Productor musical con más de 10 años en sesiones de estudio y desarrollador de software de audio (Web Audio API, DSP, C++, React). Creador de CTRL Analyzer.
             </p>
           </div>
         </div>

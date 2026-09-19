@@ -9,7 +9,7 @@
 ## 1. Identidad y Posicionamiento Único
 
 ### ¿Quién es Napbak?
-* **El Perfil:** Productor de audio e ingeniero con más de 10 años de experiencia real en sesión de estudio, combinado con el perfil de **Audio Software Developer & Indie Hacker** (experto en Web Audio API, DSP, C++, JUCE, React, Vite, Tailwind, arquitectura de DAWs y software de audio).
+* **El Perfil:** Productor musical con más de 10 años en sesiones de estudio, combinado con el perfil de **Audio Software Developer & Indie Hacker** (experto en Web Audio API, DSP, C++, JUCE, React, Vite, Tailwind, arquitectura de DAWs y software de audio).
 * **El Diferencial Competitivo:** La mayoría de los creadores son productores que no entienden el código detrás de sus herramientas, o programadores que nunca han terminado una mezcla profesional. Napbak une ambos mundos: **conoce el dolor del estudio y sabe programar la solución mecánica.**
 * **Cultura y Mentalidad:** Calidad de ingeniería Silicon Valley, pragmatismo indie hacker, psicología de conversión limpia y cero humo.
 
