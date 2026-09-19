@@ -1,12 +1,91 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { POSTS } from '../content/posts.js';
 import { ArrowLeft, Clock, Tag, Share2, Check, Sparkles, Sliders, ExternalLink } from 'lucide-react';
+
+// --- SEO Helpers ---
+function setMeta(name, content, attr = 'name') {
+  let el = document.querySelector(`meta[${attr}="${name}"]`);
+  if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
+  el.setAttribute('content', content);
+}
+function setCanonical(href) {
+  let el = document.querySelector('link[rel="canonical"]');
+  if (!el) { el = document.createElement('link'); el.setAttribute('rel', 'canonical'); document.head.appendChild(el); }
+  el.setAttribute('href', href);
+}
+function injectJsonLd(id, data) {
+  removeJsonLd(id);
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.id = id;
+  script.textContent = JSON.stringify(data);
+  document.head.appendChild(script);
+}
+function removeJsonLd(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
 
 export default function BlogPost({ slug, onNavigate }) {
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState('');
   const [formStatus, setFormStatus] = useState('idle'); // idle | sending | success | error
   const post = POSTS.find(p => p.slug === slug);
+
+  // --- SEO dinámico por artículo ---
+  useEffect(() => {
+    if (!post) return;
+    const canonicalUrl = `https://napbak.studio/blog/${post.slug}`;
+    const ogImage = post.cover || 'https://i.imgur.com/39HXelI.png';
+    const description = post.excerpt || post.subtitle;
+    const pageTitle = `${post.title} | Napbak Studio`;
+
+    // Title
+    document.title = pageTitle;
+    // Meta description
+    setMeta('description', description);
+    // Canonical
+    setCanonical(canonicalUrl);
+    // Open Graph
+    setMeta('og:type', 'article', 'property');
+    setMeta('og:url', canonicalUrl, 'property');
+    setMeta('og:title', pageTitle, 'property');
+    setMeta('og:description', description, 'property');
+    setMeta('og:image', ogImage, 'property');
+    // Twitter Card
+    setMeta('twitter:card', 'summary_large_image', 'property');
+    setMeta('twitter:url', canonicalUrl, 'property');
+    setMeta('twitter:title', pageTitle, 'property');
+    setMeta('twitter:description', description, 'property');
+    // JSON-LD BlogPosting
+    injectJsonLd('ld-blogpost', {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: post.title,
+      description: description,
+      image: ogImage,
+      datePublished: post.date,
+      dateModified: post.date,
+      author: { '@type': 'Person', name: 'Napbak', url: 'https://napbak.studio' },
+      publisher: { '@type': 'Organization', name: 'Napbak Studio', url: 'https://napbak.studio' },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+      url: canonicalUrl,
+      keywords: (post.tags || []).join(', '),
+    });
+
+    // Cleanup al desmontar
+    return () => {
+      document.title = 'Napbak | Creative Developer & Music Producer';
+      setMeta('description', 'Interactive audio portfolio of Napbak. Sound designer, creative developer, and music producer crafting immersive digital experiences.');
+      setCanonical('https://napbak.studio/');
+      setMeta('og:type', 'website', 'property');
+      setMeta('og:url', 'https://napbak.studio/', 'property');
+      setMeta('og:title', 'Napbak | Creative Developer & Music Producer', 'property');
+      setMeta('og:description', 'I build immersive sonic landscapes where technology meets raw emotion.', 'property');
+      setMeta('og:image', 'https://i.imgur.com/39HXelI.png', 'property');
+      removeJsonLd('ld-blogpost');
+    };
+  }, [post]);
 
   const handleLinkClick = (e, path) => {
     e.preventDefault();

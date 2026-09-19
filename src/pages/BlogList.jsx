@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { POSTS } from '../content/posts.js';
 import { ArrowLeft, Clock, Tag, ArrowUpRight, Sparkles, Sliders } from 'lucide-react';
 
@@ -20,6 +20,40 @@ export default function BlogList({ onNavigate }) {
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
+
+  // --- SEO dinámico para /blog ---
+  useEffect(() => {
+    const prev = {
+      title: document.title,
+      desc: document.querySelector('meta[name="description"]')?.getAttribute('content'),
+    };
+    document.title = 'Blog Técnico de Mastering y Audio | Napbak Studio';
+    const setM = (n, v, a = 'name') => {
+      let el = document.querySelector(`meta[${a}="${n}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(a, n); document.head.appendChild(el); }
+      el.setAttribute('content', v);
+    };
+    const setC = (h) => {
+      let el = document.querySelector('link[rel="canonical"]');
+      if (!el) { el = document.createElement('link'); el.setAttribute('rel', 'canonical'); document.head.appendChild(el); }
+      el.setAttribute('href', h);
+    };
+    setM('description', 'Artículos técnicos sobre mastering, LUFS, True Peak, DSP y herramientas de audio para productores profesionales. Sin humo, solo mecánica.');
+    setC('https://napbak.studio/blog');
+    setM('og:type', 'website', 'property');
+    setM('og:url', 'https://napbak.studio/blog', 'property');
+    setM('og:title', 'Blog Técnico de Mastering y Audio | Napbak Studio', 'property');
+    setM('og:description', 'Artículos técnicos sobre mastering, LUFS, True Peak, DSP y herramientas de audio para productores profesionales.', 'property');
+    return () => {
+      document.title = prev.title || 'Napbak | Creative Developer & Music Producer';
+      setM('description', prev.desc || 'Interactive audio portfolio of Napbak.');
+      setC('https://napbak.studio/');
+      setM('og:type', 'website', 'property');
+      setM('og:url', 'https://napbak.studio/', 'property');
+      setM('og:title', 'Napbak | Creative Developer & Music Producer', 'property');
+      setM('og:description', 'I build immersive sonic landscapes where technology meets raw emotion.', 'property');
+    };
+  }, []);
 
   return (
     <div className="bg-[#050505] text-[#9ca3af] font-mono min-h-screen selection:bg-[#9D4EDD] selection:text-white">
