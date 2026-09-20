@@ -75,25 +75,25 @@ export const POSTS = [
       },
       {
         type: 'paragraph',
-        text: 'Esta semana abro un **Workshop en Vivo** donde voy a trabajar estos temas desde cero, con sesiones reales, en tiempo real. No teoría abstracta. Vamos a tomar beats — los tuyos si me los mandas — y los vamos a procesar, analizar y preparar para streaming juntos. Al final vas a tener un flujo de trabajo que puedes replicar en cada producción que hagas de ahora en adelante.'
+        text: 'Esta semana abro un **Workshop en Vivo** donde voy a trabajar estos temas desde cero, con sesiones reales, en tiempo real. No teoría abstracta. Vamos a abrir el DAW para enseñarte cómo procesar, analizar y preparar tus tracks para streaming. Al final vas a tener un flujo de trabajo que puedes replicar en cada producción que hagas de ahora en adelante.'
       },
       {
         type: 'course_cta',
-        badge: 'Esta semana',
+        badge: 'Próximo Sábado • 30 Cupos',
         title: 'Workshop: Mezcla & Mastering para Productores Modernos',
-        description: 'Un workshop en vivo donde aprenderás a preparar tus beats para Spotify, Apple Music y el resto del mundo. Sin jerga innecesaria. Con tu música real. Con CTRL incluido para que puedas escuchar exactamente qué está pasando con tu audio en tiempo real.',
+        description: 'Un workshop en vivo de 2.5 horas donde aprenderás la arquitectura acústica real de un master competitivo: separación de graves, pegada limpia y loudness sin aplastar la dinámica. Incluye licencia vitalicia de nuestra suite analítica CTRL.',
         includes: [
-          'Sesión en vivo + grabación para repasar cuando quieras',
-          'Flujo de trabajo paso a paso: mezcla → master → verificación',
-          'CTRL Pro incluido durante el workshop para que lo uses en tiempo real',
-          'Análisis de beats enviados por los participantes',
-          'Checklist descargable: "Antes de subir tu canción a Spotify"',
-          'Canal de Discord privado con seguimiento post-workshop'
+          'Sesión intensiva en directo (2.5h) + Grabación 4K vitalicia',
+          'Flujo paso a paso: separación de graves, transientes y dinámica',
+          'Licencia vitalicia de la suite analítica DSP CTRL',
+          'Clinic de diagnóstico en vivo: auditoría de pistas en pantalla',
+          'Cheat Sheet PDF: Arquitectura de Frecuencias y Sidechain Quirúrgico',
+          'Acceso a la comunidad privada de productores'
         ],
-        price: '$27 USD',
-        priceNote: 'Precio de lanzamiento. Sube después del workshop.',
-        cta: 'Reservar mi lugar →',
-        url: 'mailto:hola@napbak.studio?subject=Workshop Mezcla y Mastering'
+        price: '$47 USD',
+        priceNote: 'Precio especial de prelanzamiento (Valor real $330 USD)',
+        cta: 'Ver Workshop y Reservar Cupo →',
+        url: '/workshop'
       }
     ]
   },

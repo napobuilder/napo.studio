@@ -361,8 +361,8 @@ export default function BlogPost({ slug, onNavigate }) {
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <a
                           href={block.url || 'mailto:hola@napbak.studio'}
-                          target="_blank"
-                          rel="noreferrer"
+                          target={block.url?.startsWith('http') ? '_blank' : undefined}
+                          rel={block.url?.startsWith('http') ? 'noreferrer' : undefined}
                           className="px-7 py-3.5 rounded-full bg-[#9D4EDD] hover:bg-[#b05eed] text-white text-xs tracking-widest uppercase transition-all shadow-[0_0_25px_rgba(157,78,221,0.5)] hover:shadow-[0_0_35px_rgba(157,78,221,0.7)] font-bold whitespace-nowrap"
                         >
                           {block.cta || 'Quiero entrar →'}

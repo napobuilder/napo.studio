@@ -5,6 +5,7 @@ import App from './App.jsx'
 import TusasongDashboard from './pages/TusasongDashboard.jsx'
 import BlogList from './pages/BlogList.jsx'
 import BlogPost from './pages/BlogPost.jsx'
+import WorkshopSalesPage from './pages/WorkshopSalesPage.jsx'
 
 function RootRouter() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -29,7 +30,12 @@ function RootRouter() {
     return <TusasongDashboard />;
   }
 
-  // 2. Individual Blog Post Route (/blog/:slug)
+  // 2. Workshop Sales Page (/workshop o /live)
+  if (currentPath === '/workshop' || currentPath === '/workshop/' || currentPath === '/live' || currentPath === '/live/') {
+    return <WorkshopSalesPage />;
+  }
+
+  // 3. Individual Blog Post Route (/blog/:slug)
   if (currentPath.startsWith('/blog/')) {
     const slug = currentPath.replace('/blog/', '').replace(/\/$/, '');
     if (slug) {
@@ -37,12 +43,12 @@ function RootRouter() {
     }
   }
 
-  // 3. Blog List Route (/blog)
+  // 4. Blog List Route (/blog)
   if (currentPath === '/blog' || currentPath === '/blog/') {
     return <BlogList onNavigate={navigate} />;
   }
 
-  // 4. Main Soundscape / Studio Home (/)
+  // 5. Main Soundscape / Studio Home (/)
   return <App onNavigate={navigate} />;
 }
 
