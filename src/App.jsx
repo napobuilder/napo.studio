@@ -1,4 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { 
+  initAudioContext, 
+  getAudioRefs, 
+  stopAllSources, 
+  registerSource, 
+  pauseSoundscape, 
+  resumeSoundscape, 
+  setSessionStarted,
+  getStatus 
+} from './utils/soundscapeManager';
 
 // ── Globals del sistema de audio en Memoria (Sample-Accurate) ───────────────
 let globalAudioCtx      = null;
@@ -50,24 +60,13 @@ export default function App({ onNavigate }) {
   useEffect(() => {
     const loadAudioAssets = async () => {
       try {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!globalAudioCtx) {
-          globalAudioCtx = new AC();
-          globalMasterGain = globalAudioCtx.createGain();
-          globalMasterGain.gain.value = 1;
-          globalMasterGain.connect(globalAudioCtx.destination);
-
-          globalStreamDest = globalAudioCtx.createMediaStreamDestination();
-          globalMasterGain.connect(globalStreamDest);
-
-          // Crear un GainNode por cada Stem para control de volumen individual
-          ['ether', 'bass', 'arp', 'drums'].forEach(id => {
-            const gainNode = globalAudioCtx.createGain();
-            gainNode.gain.value = 0; // Empiezan muteados
-            gainNode.connect(globalMasterGain);
-            globalTrackGains[id] = gainNode;
-          });
-        }
+        const refs = initAudioContext();
+        globalAudioCtx = refs.audioCtx;
+        globalMasterGain = refs.masterGain;
+        globalStreamDest = refs.streamDest;
+        globalTrackGains = refs.trackGains;
+        globalAudioBuffers = refs.audioBuffers;
+        globalBufferSources = refs.bufferSources;
 
         const urls = {
           ether: '/audio/stem_atmosphere.m4a',
@@ -81,6 +80,10 @@ export default function App({ onNavigate }) {
 
         // CARGA EN PARALELO: Descargamos y decodificamos todos los archivos a la vez
         await Promise.all(stemIds.map(async (id) => {
+          if (globalAudioBuffers[id]) {
+            loadedCount++;
+            return;
+          }
           try {
             const response = await fetch(urls[id]);
             const arrayBuffer = await response.arrayBuffer();
@@ -102,6 +105,12 @@ export default function App({ onNavigate }) {
         }));
         
         setIsLoaded(true);
+
+        // Si ya había una sesión iniciada antes de navegar fuera, restauramos
+        const status = getStatus();
+        if (status.isSessionStarted) {
+          setHasEntered(true);
+        }
       } catch (error) {
         console.error("Error preloading audio buffers:", error);
         setIsLoaded(true); // Permitimos entrar aunque falle por seguridad
@@ -109,6 +118,12 @@ export default function App({ onNavigate }) {
     };
 
     loadAudioAssets();
+
+    // AUTO-PAUSA AL SALIR A OTRA PÁGINA Y RESTAURAR CURSOR NATIVO
+    return () => {
+      pauseSoundscape();
+      document.body.classList.remove('cursor-stolen');
+    };
   }, []);
   const works = [
     { 
@@ -356,6 +371,9 @@ export default function App({ onNavigate }) {
     } else {
       document.body.classList.remove('cursor-stolen');
     }
+    return () => {
+      document.body.classList.remove('cursor-stolen');
+    };
   }, [isDotStolen]);
 
   const formatTime = (ms) => {
@@ -390,6 +408,8 @@ export default function App({ onNavigate }) {
 
   const handleNavigate = (e, path) => {
     e.preventDefault();
+    setIsDotStolen(false);
+    document.body.classList.remove('cursor-stolen');
     if (onNavigate) {
       onNavigate(path);
     } else {
@@ -402,6 +422,10 @@ export default function App({ onNavigate }) {
   const handleEnter = () => {
     if (!isLoaded) return;
     setHasEntered(true);
+    setSessionStarted(true);
+
+    // Si ya existían fuentes reproduciéndose previamente, las apagamos para que JAMÁS se duplique
+    stopAllSources();
     
     // FIX SAFARI/iOS: Sincronismo total. Quitamos async/await para que el resume ocurra 
     // exactamente en el mismo milisegundo del toque del usuario.
@@ -458,6 +482,7 @@ export default function App({ onNavigate }) {
         source.connect(globalTrackGains[id]);
         source.start(startTime);
         globalBufferSources[id] = source;
+        registerSource(id, source);
       }
     });
   };
@@ -475,7 +500,7 @@ export default function App({ onNavigate }) {
 
   const handlePause = () => {
     if (isPaused) {
-      if (globalAudioCtx) globalAudioCtx.resume();
+      resumeSoundscape();
       if (globalMediaRecorder && globalMediaRecorder.state === 'paused') {
         globalMediaRecorder.resume();
       }
@@ -486,7 +511,7 @@ export default function App({ onNavigate }) {
         setActiveSnippet(null);
       }
     } else {
-      if (globalAudioCtx) globalAudioCtx.suspend(); // Congela el reloj del audio (Pausa perfecta)
+      pauseSoundscape();
       if (globalMediaRecorder && globalMediaRecorder.state === 'recording') {
         globalMediaRecorder.pause();
       }

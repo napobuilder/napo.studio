@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { POSTS } from '../content/posts.js';
-import { ArrowLeft, Clock, Tag, ArrowUpRight, Sparkles, Sliders } from 'lucide-react';
+import { ArrowLeft, Clock, Tag, ArrowUpRight, Sparkles, Sliders, Volume2 } from 'lucide-react';
+import { subscribeSoundscape, toggleSoundscapePlayback, getStatus } from '../utils/soundscapeManager.js';
 
 export default function BlogList({ onNavigate }) {
   const [selectedTag, setSelectedTag] = useState('ALL');
+  const [soundscape, setSoundscape] = useState(getStatus());
+
+  useEffect(() => {
+    document.body.classList.remove('cursor-stolen');
+    const unsubscribe = subscribeSoundscape((status) => {
+      setSoundscape(status);
+    });
+    return unsubscribe;
+  }, []);
 
   const allTags = ['ALL', ...Array.from(new Set(POSTS.flatMap(p => p.tags)))];
 
@@ -78,7 +88,35 @@ export default function BlogList({ onNavigate }) {
           <span className="text-[8px] tracking-[0.4em] text-[#6b7280] uppercase mt-0.5">TECHNICAL JOURNAL</span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {soundscape.isSessionStarted && (
+            <button
+              onClick={toggleSoundscapePlayback}
+              className={`text-[10px] tracking-widest uppercase px-3.5 py-2 rounded-full border flex items-center gap-2 transition-all ${
+                soundscape.isPlaying
+                  ? 'border-[#1DB954]/50 bg-[#1DB954]/10 text-[#1DB954] hover:bg-[#1DB954]/20 shadow-[0_0_12px_rgba(29,185,84,0.3)]'
+                  : 'border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/30'
+              }`}
+              title={soundscape.isPlaying ? "Pausar música ambiental" : "Reanudar música ambiental"}
+            >
+              {soundscape.isPlaying ? (
+                <>
+                  <span className="flex items-center gap-0.5 h-3">
+                    <span className="w-0.5 h-2 bg-[#1DB954] animate-pulse"></span>
+                    <span className="w-0.5 h-3 bg-[#1DB954] animate-pulse delay-75"></span>
+                    <span className="w-0.5 h-1.5 bg-[#1DB954] animate-pulse delay-150"></span>
+                  </span>
+                  <span className="hidden sm:inline font-mono">Pausar Audio</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="hidden sm:inline font-mono">Reanudar Audio</span>
+                </>
+              )}
+            </button>
+          )}
+
           <a
             href="/"
             onClick={(e) => handleLinkClick(e, '/')}

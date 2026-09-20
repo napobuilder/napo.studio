@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { POSTS } from '../content/posts.js';
-import { ArrowLeft, Clock, Tag, Share2, Check, Sparkles, Sliders, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Clock, Tag, Share2, Check, Sparkles, Sliders, ExternalLink, Volume2, VolumeX, Mail, CheckCircle2 } from 'lucide-react';
+import { subscribeSoundscape, toggleSoundscapePlayback, getStatus } from '../utils/soundscapeManager.js';
 
 // --- SEO Helpers ---
 function setMeta(name, content, attr = 'name') {
@@ -30,7 +31,17 @@ export default function BlogPost({ slug, onNavigate }) {
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState('');
   const [formStatus, setFormStatus] = useState('idle'); // idle | sending | success | error
+  const [soundscape, setSoundscape] = useState(getStatus());
   const post = POSTS.find(p => p.slug === slug);
+
+  // Escuchar estado global del soundscape y restaurar cursor nativo
+  useEffect(() => {
+    document.body.classList.remove('cursor-stolen');
+    const unsubscribe = subscribeSoundscape((status) => {
+      setSoundscape(status);
+    });
+    return unsubscribe;
+  }, []);
 
   // --- SEO dinámico por artículo ---
   useEffect(() => {
@@ -122,6 +133,29 @@ export default function BlogPost({ slug, onNavigate }) {
     );
   }
 
+  const handleNewsletterSubmit = async (e, sourceLabel) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setFormStatus('sending');
+    try {
+      const res = await fetch('https://formspree.io/f/moevjjpq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          _subject: `[BLOG JOURNAL] Nueva Suscripción (${sourceLabel}) - ${post ? post.title : 'General'}` 
+        })
+      });
+      if (res.ok) {
+        setFormStatus('success');
+      } else {
+        setFormStatus('error');
+      }
+    } catch {
+      setFormStatus('error');
+    }
+  };
+
   const renderFormattedText = (text) => {
     // Parser simple y seguro para negritas **texto**
     const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -132,6 +166,24 @@ export default function BlogPost({ slug, onNavigate }) {
       return part;
     });
   };
+
+  // Calcular punto de inserción estilo Dan Koe (antes del 3er heading h2 o a mitad del post)
+  let headingCount = 0;
+  let inlineNewsletterIndex = -1;
+  if (post && post.content) {
+    for (let i = 0; i < post.content.length; i++) {
+      if (post.content[i].type === 'heading') {
+        headingCount++;
+        if (headingCount === 3) {
+          inlineNewsletterIndex = i;
+          break;
+        }
+      }
+    }
+    if (inlineNewsletterIndex === -1 && post.content.length > 3) {
+      inlineNewsletterIndex = Math.floor(post.content.length / 2);
+    }
+  }
 
   return (
     <div className="bg-[#050505] text-[#9ca3af] font-mono min-h-screen selection:bg-[#9D4EDD] selection:text-white">
@@ -156,6 +208,35 @@ export default function BlogPost({ slug, onNavigate }) {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* BOTÓN DE SOUNDSCAPE (Si la sesión fue iniciada previamente) */}
+          {soundscape.isSessionStarted && (
+            <button
+              onClick={toggleSoundscapePlayback}
+              className={`text-[10px] tracking-widest uppercase px-3 py-1.5 rounded-full border flex items-center gap-1.5 transition-all ${
+                soundscape.isPlaying
+                  ? 'border-[#1DB954]/50 bg-[#1DB954]/10 text-[#1DB954] hover:bg-[#1DB954]/20 shadow-[0_0_12px_rgba(29,185,84,0.3)]'
+                  : 'border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/30'
+              }`}
+              title={soundscape.isPlaying ? "Pausar música de fondo" : "Reanudar música ambiental"}
+            >
+              {soundscape.isPlaying ? (
+                <>
+                  <span className="flex items-center gap-0.5 h-3">
+                    <span className="w-0.5 h-2 bg-[#1DB954] animate-pulse"></span>
+                    <span className="w-0.5 h-3 bg-[#1DB954] animate-pulse delay-75"></span>
+                    <span className="w-0.5 h-1.5 bg-[#1DB954] animate-pulse delay-150"></span>
+                  </span>
+                  <span className="hidden sm:inline font-mono">Pausar Audio</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="hidden sm:inline font-mono">Reanudar Audio</span>
+                </>
+              )}
+            </button>
+          )}
+
           <button
             onClick={handleShare}
             className="text-[10px] tracking-widest uppercase px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 text-gray-300 flex items-center gap-1.5 transition-all"
@@ -217,20 +298,23 @@ export default function BlogPost({ slug, onNavigate }) {
         {/* Body Blocks */}
         <div className="space-y-6 text-sm sm:text-base text-gray-300 font-light leading-relaxed">
           {post.content.map((block, idx) => {
-            switch (block.type) {
-              case 'paragraph':
-                return (
-                  <p key={idx} className="leading-relaxed">
-                    {renderFormattedText(block.text)}
-                  </p>
-                );
+            const isInlineSpot = idx === inlineNewsletterIndex;
 
-              case 'heading':
-                return (
-                  <h2 key={idx} className="font-modern text-xl sm:text-2xl text-white font-normal tracking-tight pt-6 pb-2">
-                    {block.text}
-                  </h2>
-                );
+            const renderBlockContent = () => {
+              switch (block.type) {
+                case 'paragraph':
+                  return (
+                    <p key={idx} className="leading-relaxed">
+                      {renderFormattedText(block.text)}
+                    </p>
+                  );
+
+                case 'heading':
+                  return (
+                    <h2 key={idx} className="font-modern text-xl sm:text-2xl text-white font-normal tracking-tight pt-6 pb-2">
+                      {block.text}
+                    </h2>
+                  );
 
               case 'callout':
                 return (
@@ -381,7 +465,50 @@ export default function BlogPost({ slug, onNavigate }) {
               default:
                 return null;
             }
-          })}
+          };
+
+          return (
+            <React.Fragment key={idx}>
+              {/* Bloque In-Article estilo Dan Koe: Ultra-compacto y sin fricción de lectura */}
+              {isInlineSpot && (
+                <div className="my-8 max-w-md mx-auto">
+                  {formStatus === 'success' ? (
+                    <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/25 text-[#1DB954] text-xs font-mono text-center">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Suscrito. Te avisaré en el próximo artículo.</span>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={(e) => handleNewsletterSubmit(e, 'In-Article DanKoe')}
+                      className="flex items-center gap-2 bg-[#09090d] border border-white/10 hover:border-white/20 focus-within:border-[#9D4EDD]/60 p-1.5 rounded-xl transition-all shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
+                    >
+                      <input
+                        type="email"
+                        required
+                        placeholder="Escribe tu correo electrónico..."
+                        value={email}
+                        onChange={(e) => { setEmail(e.target.value); setFormStatus('idle'); }}
+                        className="flex-1 bg-transparent px-3 py-1.5 text-xs text-white placeholder:text-gray-500 outline-none font-mono"
+                      />
+                      <button
+                        type="submit"
+                        disabled={formStatus === 'sending'}
+                        className="px-4 py-2 rounded-lg bg-white/10 hover:bg-[#9D4EDD] text-gray-200 hover:text-white text-xs font-mono tracking-wider transition-all disabled:opacity-50 whitespace-nowrap shadow-sm hover:shadow-[0_0_15px_rgba(157,78,221,0.4)]"
+                      >
+                        {formStatus === 'sending' ? '...' : 'Suscribir'}
+                      </button>
+                    </form>
+                  )}
+                  {formStatus === 'error' && (
+                    <p className="text-[10px] text-red-400 text-center mt-1.5 font-mono">Hubo un problema. Intenta de nuevo.</p>
+                  )}
+                </div>
+              )}
+
+              {renderBlockContent()}
+            </React.Fragment>
+          );
+        })}
         </div>
 
         {/* Author Bio Box */}
@@ -405,7 +532,7 @@ export default function BlogPost({ slug, onNavigate }) {
           </div>
         </div>
 
-        {/* Newsletter Formspree */}
+        {/* Newsletter Formspree (Footer) */}
         <div className="mt-12 p-6 sm:p-8 rounded-2xl border border-[#9D4EDD]/25 bg-gradient-to-br from-[#0f0b17] to-[#080808]">
           <div className="text-center mb-5">
             <span className="text-[9px] tracking-[0.3em] uppercase text-[#9D4EDD] font-bold block mb-2">TECHNICAL JOURNAL</span>
@@ -415,31 +542,12 @@ export default function BlogPost({ slug, onNavigate }) {
 
           {formStatus === 'success' ? (
             <div className="flex flex-col items-center gap-2 py-3">
-              <span className="text-2xl">✓</span>
+              <span className="text-2xl text-[#1DB954]">✓</span>
               <p className="text-sm text-[#E0AAFF] font-light">Suscrito. Te aviso en el próximo artículo.</p>
             </div>
           ) : (
             <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!email) return;
-                setFormStatus('sending');
-                try {
-                  const res = await fetch('https://formspree.io/f/moevjjpq', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ email, _subject: 'Nueva suscripción - Napbak Blog' })
-                  });
-                  if (res.ok) {
-                    setFormStatus('success');
-                    setEmail('');
-                  } else {
-                    setFormStatus('error');
-                  }
-                } catch {
-                  setFormStatus('error');
-                }
-              }}
+              onSubmit={(e) => handleNewsletterSubmit(e, 'Footer Post')}
               className="flex flex-col sm:flex-row gap-3"
             >
               <input
