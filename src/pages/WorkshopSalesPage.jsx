@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Check, Clock, Users, Zap, ChevronDown, ChevronUp, 
   ExternalLink, Play, Shield, Sparkles, Volume2, Award, 
-  ArrowRight, AlertCircle, Headphones, Lock, Sliders, ArrowUpRight
+  ArrowRight, AlertCircle, Headphones, Lock, Sliders, ArrowUpRight,
+  Copy, CheckCheck, QrCode, CreditCard, Send, CheckCircle2, Wallet, Smartphone
 } from 'lucide-react';
 
 export default function WorkshopSalesPage() {
@@ -26,7 +27,73 @@ export default function WorkshopSalesPage() {
     setOpenFaq(openFaq === index ? null : index);
   };
 
-  const CHECKOUT_URL = "https://ctrl.napbak.studio";
+  // ── Configuración de Pagos ──
+  const GUMROAD_URL = "https://napoacademy.gumroad.com/l/workshop"; // Enlace oficial de Gumroad
+  const PAYPAL_ME_URL = "https://www.paypal.com/paypalme/norkafarina/47";
+  const FORMSPREE_ENDPOINT = "https://formspree.io/f/moevjjpq";
+
+  const [paymentTab, setPaymentTab] = useState('gumroad'); // 'gumroad' | 'pagomovil' | 'binance' | 'paypal'
+  const [copiedKey, setCopiedKey] = useState(null);
+  
+  // Estado del formulario manual
+  const [reportForm, setReportForm] = useState({
+    name: '',
+    email: '',
+    reference: '',
+    notes: ''
+  });
+  const [formStatus, setFormStatus] = useState('idle'); // 'idle' | 'sending' | 'success' | 'error'
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const copyToClipboard = (text, keyName) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedKey(keyName);
+      setTimeout(() => setCopiedKey(null), 2500);
+    }
+  };
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!reportForm.name.trim() || !reportForm.email.trim() || !reportForm.reference.trim()) {
+      setErrorMessage('Por favor completa tu nombre, correo y número de referencia.');
+      return;
+    }
+
+    setFormStatus('sending');
+    setErrorMessage('');
+
+    try {
+      const response = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          _subject: `[WORKSHOP 2026] Reporte de Pago - ${reportForm.name} (${paymentTab.toUpperCase()})`,
+          tipo_de_pago: paymentTab === 'pagomovil' ? 'Pago Móvil (Bs)' : paymentTab === 'binance' ? 'Binance Pay (USDT)' : 'PayPal Directo',
+          nombre_completo: reportForm.name,
+          email_acceso: reportForm.email,
+          referencia_comprobante: reportForm.reference,
+          notas_adicionales: reportForm.notes || 'Sin notas adicionales',
+          monto_equivalente: '$47 USD'
+        })
+      });
+
+      if (response.ok) {
+        setFormStatus('success');
+      } else {
+        const data = await response.json();
+        setErrorMessage(data?.error || 'Hubo un inconveniente al enviar tu reporte. Intenta de nuevo.');
+        setFormStatus('error');
+      }
+    } catch (err) {
+      console.error('Error enviando formulario:', err);
+      setErrorMessage('Error de conexión. Verifica tu internet e intenta nuevamente.');
+      setFormStatus('error');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#050505] text-[#9ca3af] font-mono selection:bg-[#9D4EDD] selection:text-white relative overflow-hidden">
@@ -362,34 +429,470 @@ export default function WorkshopSalesPage() {
 
             </div>
 
-            {/* Price Calculation Box */}
-            <div className="pt-6 border-t border-white/10 text-center">
-              <p className="text-[10px] text-[#6b7280] uppercase tracking-[0.3em] font-mono mb-1">
-                VALOR REAL INTEGRADO: <span className="line-through text-white/40">$330 USD</span>
-              </p>
-              
-              <div className="flex items-baseline justify-center gap-2 mb-2">
-                <span className="text-5xl sm:text-6xl font-light font-modern text-white tracking-tight">$47</span>
-                <span className="text-[#E0AAFF] text-sm font-mono tracking-widest">USD</span>
+            {/* Price Calculation Box & Multi-Gateway Checkout */}
+            <div className="pt-6 border-t border-white/10">
+              <div className="text-center mb-6">
+                <p className="text-[10px] text-[#6b7280] uppercase tracking-[0.3em] font-mono mb-1">
+                  VALOR REAL INTEGRADO: <span className="line-through text-white/40">$330 USD</span>
+                </p>
+                
+                <div className="flex items-baseline justify-center gap-2 mb-2">
+                  <span className="text-5xl sm:text-6xl font-light font-modern text-white tracking-tight">$47</span>
+                  <span className="text-[#E0AAFF] text-sm font-mono tracking-widest">USD</span>
+                </div>
+
+                <p className="text-[11px] text-amber-400 font-mono tracking-wider">
+                  ⚡ Precio especial de prelanzamiento para los primeros 30 registros
+                </p>
               </div>
 
-              <p className="text-[11px] text-amber-400 font-mono tracking-wider mb-6">
-                ⚡ Precio especial de prelanzamiento para los primeros 30 registros
-              </p>
+              {/* TABS DE MÉTODOS DE PAGO */}
+              <div className="mb-6">
+                <p className="text-[10px] text-[#6b7280] font-mono uppercase tracking-widest text-center mb-3">
+                  SELECCIONA TU FORMA DE PAGO PREFERIDA:
+                </p>
 
-              <a
-                href={CHECKOUT_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full block py-4 px-8 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-xs tracking-[0.18em] uppercase transition-all duration-300 shadow-[0_0_35px_rgba(157,78,221,0.45)] hover:shadow-[0_0_55px_rgba(157,78,221,0.75)] hover:scale-[1.01]"
-              >
-                Asegurar Mi Cupo + Licencia CTRL ($47 USD)
-              </a>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {/* Gumroad Tab */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentTab('gumroad')}
+                    className={`py-3 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 relative ${
+                      paymentTab === 'gumroad'
+                        ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] text-white shadow-[0_0_15px_rgba(157,78,221,0.25)]'
+                        : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard className="w-4 h-4 text-[#E0AAFF]" />
+                      <span className="text-xs font-modern font-semibold">Gumroad</span>
+                    </div>
+                    <span className="text-[8px] text-[#1DB954] font-mono tracking-tight uppercase font-bold">Tarjeta & PayPal</span>
+                  </button>
 
-              <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-[#6b7280] font-mono uppercase tracking-widest">
-                <span className="flex items-center gap-1 text-[#1DB954]"><Lock className="w-3 h-3" /> Transacción Segura SSL</span>
+                  {/* Pago Móvil Tab */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentTab('pagomovil')}
+                    className={`py-3 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      paymentTab === 'pagomovil'
+                        ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] text-white shadow-[0_0_15px_rgba(157,78,221,0.25)]'
+                        : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Smartphone className="w-4 h-4 text-[#38bdf8]" />
+                      <span className="text-xs font-modern font-semibold">Pago Móvil</span>
+                    </div>
+                    <span className="text-[8px] text-[#38bdf8] font-mono tracking-tight uppercase font-bold">Bolívares (Bs)</span>
+                  </button>
+
+                  {/* Binance Tab */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentTab('binance')}
+                    className={`py-3 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      paymentTab === 'binance'
+                        ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] text-white shadow-[0_0_15px_rgba(157,78,221,0.25)]'
+                        : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Wallet className="w-4 h-4 text-amber-400" />
+                      <span className="text-xs font-modern font-semibold">Binance</span>
+                    </div>
+                    <span className="text-[8px] text-amber-400 font-mono tracking-tight uppercase font-bold">USDT / Pay</span>
+                  </button>
+
+                  {/* PayPal Directo Tab */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentTab('paypal')}
+                    className={`py-3 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      paymentTab === 'paypal'
+                        ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] text-white shadow-[0_0_15px_rgba(157,78,221,0.25)]'
+                        : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <ExternalLink className="w-4 h-4 text-[#60a5fa]" />
+                      <span className="text-xs font-modern font-semibold">PayPal.me</span>
+                    </div>
+                    <span className="text-[8px] text-[#60a5fa] font-mono tracking-tight uppercase font-bold">Saldo Directo</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* ── CONTENIDO DEL TAB SELECCIONADO ── */}
+              
+              {/* TAB 1: GUMROAD (AUTOMÁTICO) */}
+              {paymentTab === 'gumroad' && (
+                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 text-center animate-fadeIn">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1DB954]/10 border border-[#1DB954]/25 text-[#1DB954] text-[9px] font-mono uppercase tracking-widest mb-4">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954] animate-pulse"></span>
+                    ENTREGA AUTOMÁTICA E INMEDIATA 24/7
+                  </div>
+
+                  <h3 className="font-modern text-lg sm:text-xl text-white font-light mb-2">
+                    Pago Internacional con Tarjeta o PayPal
+                  </h3>
+                  <p className="text-xs text-[#9ca3af] font-light max-w-lg mx-auto mb-6">
+                    Procesado de forma 100% segura por <strong className="text-white">Gumroad</strong>. Acepta tarjetas de crédito/débito internacionales y cuenta de PayPal. Recibirás tu acceso y licencia en segundos.
+                  </p>
+
+                  <a
+                    href={GUMROAD_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full block py-4 px-8 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-xs sm:text-sm tracking-[0.18em] uppercase transition-all duration-300 shadow-[0_0_35px_rgba(157,78,221,0.45)] hover:shadow-[0_0_55px_rgba(157,78,221,0.75)] hover:scale-[1.01]"
+                  >
+                    Pagar $47 USD con Tarjeta o PayPal en Gumroad ↗
+                  </a>
+                </div>
+              )}
+
+              {/* TAB 2: PAGO MÓVIL (BOLÍVARES) */}
+              {paymentTab === 'pagomovil' && (
+                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 animate-fadeIn">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-white/5">
+                    <div>
+                      <h3 className="font-modern text-lg text-white font-light flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-[#38bdf8]" />
+                        Datos para Pago Móvil (Venezuela)
+                      </h3>
+                      <p className="text-xs text-[#9ca3af] font-light mt-0.5">
+                        Transfiere el equivalente a <strong className="text-white">$47 USD</strong> a la tasa oficial del BCV del día.
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-mono text-[#38bdf8] bg-[#38bdf8]/10 border border-[#38bdf8]/25 px-2.5 py-1 rounded-full uppercase tracking-wider w-fit">
+                      TASA OFICIAL BCV
+                    </span>
+                  </div>
+
+                  {/* Fila de Datos Bancarios con botones copiar */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                    
+                    {/* Banco */}
+                    <div className="bg-[#050505] p-3 rounded-xl border border-white/5">
+                      <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">Banco</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-xs font-semibold">Provincial (0108)</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('0108', 'pm_banco')}
+                          className="text-[#6b7280] hover:text-white p-1"
+                          title="Copiar código de banco"
+                        >
+                          {copiedKey === 'pm_banco' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Teléfono */}
+                    <div className="bg-[#050505] p-3 rounded-xl border border-white/5">
+                      <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">Teléfono</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-xs font-mono font-semibold">04121479466</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('04121479466', 'pm_tel')}
+                          className="text-[#6b7280] hover:text-white p-1"
+                          title="Copiar teléfono"
+                        >
+                          {copiedKey === 'pm_tel' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Cédula */}
+                    <div className="bg-[#050505] p-3 rounded-xl border border-white/5">
+                      <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">Cédula</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-xs font-mono font-semibold">19531198</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('19531198', 'pm_ci')}
+                          className="text-[#6b7280] hover:text-white p-1"
+                          title="Copiar cédula"
+                        >
+                          {copiedKey === 'pm_ci' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {copiedKey && (
+                    <div className="text-center text-[10px] text-[#1DB954] font-mono mb-4 animate-pulse">
+                      ✓ Dato copiado al portapapeles
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-[#9ca3af] font-mono text-center mb-4">
+                    👇 Realiza tu pago móvil y notifícalo con el formulario inferior para reservar tu cupo y software de inmediato:
+                  </p>
+                </div>
+              )}
+
+              {/* TAB 3: BINANCE PAY (USDT) */}
+              {paymentTab === 'binance' && (
+                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 animate-fadeIn">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-white/5">
+                    <div>
+                      <h3 className="font-modern text-lg text-white font-light flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-amber-400" />
+                        Pagar con Binance Pay / Cripto
+                      </h3>
+                      <p className="text-xs text-[#9ca3af] font-light mt-0.5">
+                        Transfiere <strong className="text-white">47 USDT</strong> a través de Binance Pay sin comisiones.
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-mono text-amber-400 bg-amber-400/10 border border-amber-400/25 px-2.5 py-1 rounded-full uppercase tracking-wider w-fit">
+                      0% COMISIÓN
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
+                    {/* Código QR oficial de Binance Pay */}
+                    <div className="bg-white p-2.5 rounded-2xl shadow-xl flex flex-col items-center shrink-0">
+                      <img 
+                        src="/binance-qr.png" 
+                        alt="QR Oficial Binance Pay 93927162" 
+                        className="w-32 h-32 object-contain rounded-lg"
+                      />
+                      <span className="text-[8px] font-mono text-black uppercase font-bold tracking-wider mt-1.5">
+                        Escanear en App Binance
+                      </span>
+                    </div>
+
+                    {/* Datos de Binance */}
+                    <div className="space-y-3 w-full">
+                      <div className="bg-[#050505] p-3 rounded-xl border border-white/5 flex items-center justify-between">
+                        <div>
+                          <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider">Binance Pay ID</span>
+                          <span className="text-white text-sm font-mono font-bold">93927162</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('93927162', 'binance_id')}
+                          className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-[#E0AAFF] font-mono flex items-center gap-1.5 transition-colors"
+                        >
+                          {copiedKey === 'binance_id' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedKey === 'binance_id' ? 'Copiado' : 'Copiar ID'}</span>
+                        </button>
+                      </div>
+
+                      <div className="bg-[#050505] p-3 rounded-xl border border-white/5 flex items-center justify-between">
+                        <div>
+                          <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider">Correo Binance</span>
+                          <span className="text-white text-sm font-mono font-bold">napbak@gmail.com</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('napbak@gmail.com', 'binance_mail')}
+                          className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-[#E0AAFF] font-mono flex items-center gap-1.5 transition-colors"
+                        >
+                          {copiedKey === 'binance_mail' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedKey === 'binance_mail' ? 'Copiado' : 'Copiar'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-[#9ca3af] font-mono text-center mb-2">
+                    👇 Pega tu Order ID o Referencia de Binance en el formulario inferior para verificar tu acceso:
+                  </p>
+                </div>
+              )}
+
+              {/* TAB 4: PAYPAL DIRECTO */}
+              {paymentTab === 'paypal' && (
+                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 animate-fadeIn">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-white/5">
+                    <div>
+                      <h3 className="font-modern text-lg text-white font-light flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-[#60a5fa]" />
+                        Transferencia Directa por PayPal
+                      </h3>
+                      <p className="text-xs text-[#9ca3af] font-light mt-0.5">
+                        Envía <strong className="text-white">$47 USD</strong> directamente desde tu saldo de PayPal personal.
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-mono text-[#60a5fa] bg-[#60a5fa]/10 border border-[#60a5fa]/25 px-2.5 py-1 rounded-full uppercase tracking-wider w-fit">
+                      PAYPAL.ME
+                    </span>
+                  </div>
+
+                  <div className="bg-[#050505] p-4 rounded-xl border border-white/5 mb-6 text-center">
+                    <p className="text-xs text-white mb-3 font-mono">
+                      Enlace de pago configurado por $47 USD:
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <a
+                        href={PAYPAL_ME_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="py-3 px-6 rounded-full bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold text-xs font-mono uppercase tracking-wider inline-flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(0,112,186,0.4)]"
+                      >
+                        <span>Abrir PayPal.me ($47 USD)</span>
+                        <ArrowUpRight className="w-4 h-4" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(PAYPAL_ME_URL, 'paypal_url')}
+                        className="py-3 px-4 rounded-full bg-white/5 hover:bg-white/10 text-xs text-white font-mono flex items-center gap-2 border border-white/10 transition-colors"
+                      >
+                        {copiedKey === 'paypal_url' ? <CheckCheck className="w-4 h-4 text-[#1DB954]" /> : <Copy className="w-4 h-4" />}
+                        <span>{copiedKey === 'paypal_url' ? 'Enlace Copiado' : 'Copiar Link'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-[#9ca3af] font-mono text-center mb-2">
+                    👇 Tras completar la transferencia en PayPal, introduce tu ID de transacción o correo en el formulario:
+                  </p>
+                </div>
+              )}
+
+              {/* ── FORMULARIO FORMSPREE PARA PAGOS MANUALES ── */}
+              {paymentTab !== 'gumroad' && (
+                <div className="mt-6 p-6 rounded-2xl bg-[#09090d] border border-[#9D4EDD]/30 shadow-[0_0_30px_rgba(157,78,221,0.15)]">
+                  
+                  {formStatus === 'success' ? (
+                    <div className="text-center py-6 space-y-4 animate-fadeIn">
+                      <div className="w-14 h-14 rounded-full bg-[#1DB954]/20 border border-[#1DB954]/40 text-[#1DB954] flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(29,185,84,0.4)]">
+                        <CheckCircle2 className="w-8 h-8" />
+                      </div>
+                      <h4 className="font-modern text-xl text-white font-light">
+                        ¡Comprobante Recibido con Éxito!
+                      </h4>
+                      <p className="text-xs text-[#9ca3af] max-w-md mx-auto leading-relaxed">
+                        Hemos registrado tu reporte para <strong className="text-white">{reportForm.name}</strong>. En un plazo máximo de 2 horas validaremos tu referencia y te enviaremos a <strong className="text-[#E0AAFF]">{reportForm.email}</strong> el enlace de acceso al aula del workshop y las instrucciones de tu suite <strong className="text-white">CTRL</strong>.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormStatus('idle');
+                          setReportForm({ name: '', email: '', reference: '', notes: '' });
+                        }}
+                        className="mt-4 text-xs font-mono text-[#E0AAFF] underline hover:text-white transition-colors"
+                      >
+                        Reportar otro pago o enviar una aclaración
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleReportSubmit} className="space-y-4">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                        <div className="flex items-center gap-2">
+                          <Send className="w-3.5 h-3.5 text-[#E0AAFF]" />
+                          <h4 className="font-modern text-sm text-white font-medium">
+                            Notificar Pago // {paymentTab === 'pagomovil' ? 'Pago Móvil Bs' : paymentTab === 'binance' ? 'Binance USDT' : 'PayPal'}
+                          </h4>
+                        </div>
+                        <span className="text-[8px] font-mono text-[#6b7280] uppercase tracking-widest">
+                          CONFIRMACIÓN RÁPIDA
+                        </span>
+                      </div>
+
+                      {errorMessage && (
+                        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{errorMessage}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">
+                            Tu Nombre y Apellido *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Ej. Carlos Rodríguez"
+                            value={reportForm.name}
+                            onChange={(e) => setReportForm({ ...reportForm, name: e.target.value })}
+                            className="w-full bg-[#050505] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD] transition-colors"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">
+                            Correo de Acceso (Donde recibirás CTRL) *
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            placeholder="tu.correo@ejemplo.com"
+                            value={reportForm.email}
+                            onChange={(e) => setReportForm({ ...reportForm, email: e.target.value })}
+                            className="w-full bg-[#050505] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD] transition-colors"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">
+                            {paymentTab === 'pagomovil' ? 'Número de Referencia (Últimos dígitos) *' : paymentTab === 'binance' ? 'Binance Order ID / TxID *' : 'ID de Transacción PayPal *'}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder={paymentTab === 'pagomovil' ? 'Ej. 847291' : paymentTab === 'binance' ? 'Ej. 248910248' : 'Ej. 4XY12894...'}
+                            value={reportForm.reference}
+                            onChange={(e) => setReportForm({ ...reportForm, reference: e.target.value })}
+                            className="w-full bg-[#050505] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD] transition-colors"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">
+                            Nota o Banco Emisor (Opcional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ej. Banesco a Provincial / Titular..."
+                            value={reportForm.notes}
+                            onChange={(e) => setReportForm({ ...reportForm, notes: e.target.value })}
+                            className="w-full bg-[#050505] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD] transition-colors"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={formStatus === 'sending'}
+                        className="w-full mt-2 py-3.5 px-6 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-xs tracking-widest uppercase transition-all duration-300 shadow-[0_0_25px_rgba(157,78,221,0.4)] disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {formStatus === 'sending' ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Validando y Enviando Reporte...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Enviar Comprobante y Asegurar Cupo ($47 USD)</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+
+                      <p className="text-[9px] text-[#6b7280] text-center font-mono">
+                        🔒 Tu información está cifrada. Tras el envío recibirás la confirmación en tu correo.
+                      </p>
+                    </form>
+                  )}
+
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-[10px] text-[#6b7280] font-mono uppercase tracking-widest">
+                <span className="flex items-center gap-1 text-[#1DB954]"><Lock className="w-3 h-3" /> Transacción Segura</span>
                 <span>•</span>
-                <span>Licencia Vitalicia Inmediata</span>
+                <span>Licencia Vitalicia CTRL Incluida</span>
+                <span>•</span>
+                <span>Auditoría de stems en Directo</span>
               </div>
             </div>
 
