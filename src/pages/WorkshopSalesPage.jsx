@@ -11,6 +11,14 @@ export default function WorkshopSalesPage() {
   const [openFaq, setOpenFaq] = useState(null);
 
   useEffect(() => {
+    document.title = "Workshop FL Studio: De Mezcla Opaca a Master Comercial (+ Suite CTRL)";
+    const ogImg = document.querySelector('meta[property="og:image"]');
+    if (ogImg) ogImg.setAttribute('content', 'https://napbak.studio/toma-el-control.png');
+    const twitterImg = document.querySelector('meta[property="twitter:image"]');
+    if (twitterImg) twitterImg.setAttribute('content', 'https://napbak.studio/toma-el-control.png');
+  }, []);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
