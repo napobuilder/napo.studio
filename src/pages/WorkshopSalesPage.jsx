@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Check, Clock, Users, Zap, ChevronDown, ChevronUp, 
-  ExternalLink, Play, Shield, Sparkles, Volume2, Award, 
-  ArrowRight, AlertCircle, Headphones, Lock, Sliders, ArrowUpRight,
-  Copy, CheckCheck, QrCode, CreditCard, Send, CheckCircle2, Wallet, Smartphone
+  ExternalLink, Shield, Sparkles, Volume2, 
+  ArrowRight, AlertCircle, Lock, Sliders, ArrowUpRight,
+  Copy, CheckCheck, CreditCard, Send, CheckCircle2, Wallet, Smartphone, Piano
 } from 'lucide-react';
 
 export default function WorkshopSalesPage() {
@@ -27,965 +27,829 @@ export default function WorkshopSalesPage() {
     setOpenFaq(openFaq === index ? null : index);
   };
 
-  // ── Configuración de Pagos ──
-  const GUMROAD_URL = "https://napoacademy.gumroad.com/l/workshop"; // Enlace oficial de Gumroad
-  const PAYPAL_ME_URL = "https://www.paypal.com/paypalme/norkafarina/47";
+  // Configuración de Pasarelas & Add-ons
+  const [includeMastering, setIncludeMastering] = useState(false); // +$20
+  const [includeTemplate, setIncludeTemplate] = useState(false);   // +$15
+  const [includeVipAudit, setIncludeVipAudit] = useState(false);   // +$27
+
+  // Tasa Oficial BCV en tiempo real
+  const [bcvRate, setBcvRate] = useState(null);
+  const [loadingBcv, setLoadingBcv] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchBcv() {
+      try {
+        const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.promedio && isMounted) {
+            setBcvRate(data.promedio);
+            setLoadingBcv(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Error al obtener tasa BCV oficial:', err);
+      }
+      if (isMounted) {
+        setBcvRate(855.66); // Fallback de contingencia
+        setLoadingBcv(false);
+      }
+    }
+    fetchBcv();
+    return () => { isMounted = false; };
+  }, []);
+
+  const currentTotal = 47 
+    + (includeMastering ? 20 : 0) 
+    + (includeTemplate ? 15 : 0) 
+    + (includeVipAudit ? 27 : 0);
+
+  const totalBs = bcvRate ? (currentTotal * bcvRate) : null;
+  const formattedBs = totalBs
+    ? totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : null;
+
+  const baseStrikePrice = 147 
+    + (includeMastering ? 60 : 0) 
+    + (includeTemplate ? 45 : 0) 
+    + (includeVipAudit ? 80 : 0);
+
+  const selectedAddonsList = [
+    includeMastering ? 'Mastering 1 Tema (+ $20)' : null,
+    includeTemplate ? 'Plantilla FL Studio .FLP (+ $15)' : null,
+    includeVipAudit ? 'Pase VIP Auditoría Garantizada (+ $27)' : null,
+  ].filter(Boolean);
+
+  const GUMROAD_URL = `https://napoacademy.gumroad.com/l/workshop?price=${currentTotal}&wanted=true`;
+  const PAYPAL_ME_URL = `https://www.paypal.com/paypalme/norkafarina/${currentTotal}`;
   const FORMSPREE_ENDPOINT = "https://formspree.io/f/moevjjpq";
 
   const [paymentTab, setPaymentTab] = useState('gumroad'); // 'gumroad' | 'pagomovil' | 'binance' | 'paypal'
   const [copiedKey, setCopiedKey] = useState(null);
   
-  // Estado del formulario manual
   const [reportForm, setReportForm] = useState({
     name: '',
     email: '',
     reference: '',
     notes: ''
   });
-  const [formStatus, setFormStatus] = useState('idle'); // 'idle' | 'sending' | 'success' | 'error'
+  const [formStatus, setFormStatus] = useState('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
   const copyToClipboard = (text, keyName) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopiedKey(keyName);
-      setTimeout(() => setCopiedKey(null), 2500);
+      setTimeout(() => setCopiedKey(null), 2200);
     }
   };
 
   const handleReportSubmit = async (e) => {
     e.preventDefault();
     if (!reportForm.name.trim() || !reportForm.email.trim() || !reportForm.reference.trim()) {
-      setErrorMessage('Por favor completa tu nombre, correo y número de referencia.');
+      setErrorMessage('Por favor completa nombre, correo y número de referencia.');
       return;
     }
-
-    setFormStatus('sending');
     setErrorMessage('');
+    setFormStatus('sending');
 
     try {
       const response = await fetch(FORMSPREE_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          _subject: `[WORKSHOP 2026] Reporte de Pago - ${reportForm.name} (${paymentTab.toUpperCase()})`,
-          tipo_de_pago: paymentTab === 'pagomovil' ? 'Pago Móvil (Bs)' : paymentTab === 'binance' ? 'Binance Pay (USDT)' : 'PayPal Directo',
-          nombre_completo: reportForm.name,
-          email_acceso: reportForm.email,
-          referencia_comprobante: reportForm.reference,
-          notas_adicionales: reportForm.notes || 'Sin notas adicionales',
-          monto_equivalente: '$47 USD'
+          método_pago: paymentTab,
+          nombre: reportForm.name,
+          email: reportForm.email,
+          referencia: reportForm.reference,
+          notas: reportForm.notes,
+          monto_total: `${currentTotal} USD`,
+          monto_bolivares: formattedBs ? `Bs. ${formattedBs}` : 'N/A',
+          tasa_bcv: bcvRate ? `Bs. ${bcvRate.toFixed(2)}` : 'N/A',
+          add_ons_seleccionados: selectedAddonsList.join(', ') || 'Ninguno (Solo Workshop Base)',
+          fecha: new Date().toISOString(),
+          producto: `Workshop FL Studio (${currentTotal} USD)`
         })
       });
 
       if (response.ok) {
         setFormStatus('success');
       } else {
-        const data = await response.json();
-        setErrorMessage(data?.error || 'Hubo un inconveniente al enviar tu reporte. Intenta de nuevo.');
         setFormStatus('error');
+        setErrorMessage('Error al enviar comprobante. Escríbenos a soporte@napbak.studio');
       }
-    } catch (err) {
-      console.error('Error enviando formulario:', err);
-      setErrorMessage('Error de conexión. Verifica tu internet e intenta nuevamente.');
+    } catch {
       setFormStatus('error');
+      setErrorMessage('Hubo un problema de conexión. Inténtalo de nuevo.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#9ca3af] font-mono selection:bg-[#9D4EDD] selection:text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#050507] text-[#f3f4f6] selection:bg-[#9D4EDD] selection:text-white relative overflow-hidden font-modern">
       
-      {/* ── Google Fonts Injected ────────────────────── */}
+      {/* Tipografías Napbak */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@100;300;400;600;700&family=Outfit:wght@100;300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600&family=Outfit:wght@200;300;400;500;600;700&display=swap');
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         .font-modern { font-family: 'Outfit', sans-serif; }
         .font-serif { font-family: 'Instrument Serif', serif; }
       `}</style>
 
-      {/* ── Ambient Background Glows ─────────────────── */}
-      <div className="absolute top-0 right-1/4 w-[600px] h-[500px] bg-[#9D4EDD]/10 blur-[160px] pointer-events-none rounded-full"></div>
-      <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-[#3b82f6]/5 blur-[150px] pointer-events-none rounded-full"></div>
-      <div className="absolute bottom-1/4 right-0 w-[600px] h-[600px] bg-[#9D4EDD]/5 blur-[180px] pointer-events-none rounded-full"></div>
+      {/* Sutil Glow Ambiental */}
+      <div className="absolute top-0 right-1/4 w-[450px] h-[350px] bg-[#9D4EDD]/10 blur-[130px] pointer-events-none rounded-full"></div>
+      <div className="absolute bottom-1/3 left-0 w-[400px] h-[400px] bg-[#3b82f6]/5 blur-[140px] pointer-events-none rounded-full"></div>
 
-      {/* ── BARRA SUPERIOR DE ESTADO EN DIRECTO ──────── */}
-      <div className="bg-[#08080c] border-b border-[#9D4EDD]/25 text-[#E0AAFF] text-[10px] md:text-xs tracking-widest uppercase py-2.5 px-4 sticky top-0 z-50 backdrop-blur-md flex items-center justify-center gap-3 shadow-[0_4px_25px_rgba(0,0,0,0.8)]">
-        <span className="flex items-center gap-1.5 text-white font-semibold">
+      {/* Barra Superior Compacta */}
+      <div className="bg-[#08080c]/90 border-b border-white/5 text-[11px] py-2 px-4 backdrop-blur-md flex items-center justify-between max-w-5xl mx-auto">
+        <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#1DB954] animate-pulse"></span>
-          LIVE COHORT EN DIRECTO
-        </span>
-        <span className="text-white/20 hidden sm:inline">•</span>
-        <span className="text-[#9ca3af] hidden sm:inline">Próximo Sábado 7:00 PM EST</span>
-        <span className="text-white/20">•</span>
-        <span className="text-amber-400 font-bold bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/30">
-          Solo 30 Cupos (Auditoría Quirúrgica en Directo)
-        </span>
+          <span className="text-white font-mono tracking-wider uppercase text-[10px]">COHORT LIVE 2026</span>
+          <span className="text-white/20 hidden sm:inline">•</span>
+          <span className="text-[#9ca3af] hidden sm:inline text-[11px]">Sábado 7:00 PM EST</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-amber-400 font-mono text-[10px] bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/25">
+            Solo 30 Cupos
+          </span>
+          <a href="#checkout" className="text-white hover:text-[#E0AAFF] font-mono text-[11px] underline">
+            Inscribirme ($47)
+          </a>
+        </div>
       </div>
 
-      {/* ── HEADER NAPBAK.STUDIO BRANDED ─────────────── */}
-      <header className="border-b border-white/5 bg-[#050505]/90 backdrop-blur-md sticky top-9 z-40 px-6 md:px-12 py-4 flex items-center justify-between">
-        <div className="flex flex-col">
-          <a href="/" className="font-modern text-2xl text-white font-light tracking-tighter lowercase flex items-baseline hover:opacity-85 transition-opacity">
-            napbak<span className="font-serif italic text-white px-[1px]">.</span><span className="font-serif italic text-white/70">studio</span>
-            <span className="animate-pulse text-[#9D4EDD] ml-1">_</span>
-          </a>
-          <span className="text-[8px] tracking-[0.4em] text-[#6b7280] uppercase mt-0.5">WORKSHOP LAB // 2026 COHORT</span>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <a 
-            href="#inscribirme"
-            className="px-5 py-2.5 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-xs tracking-widest uppercase transition-all duration-300 shadow-[0_0_20px_rgba(157,78,221,0.35)] hover:shadow-[0_0_30px_rgba(157,78,221,0.6)] hover:scale-105"
-          >
-            Reservar Cupo ($47)
-          </a>
+      {/* Header Minimal */}
+      <header className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between border-b border-white/5">
+        <a href="/" className="font-modern text-xl text-white font-light tracking-tight flex items-baseline">
+          napbak<span className="font-serif italic text-white/70">.studio</span>
+          <span className="animate-pulse text-[#9D4EDD] ml-1">_</span>
+        </a>
+        <div className="flex items-center gap-3 font-mono text-xs text-[#9ca3af]">
+          <span>Workshop // 2.5h</span>
         </div>
       </header>
 
-      {/* ── HERO SECTION ─────────────────────────────── */}
-      <section className="relative pt-16 pb-20 px-6 md:px-12 max-w-6xl mx-auto z-10">
-        <div className="text-center max-w-4xl mx-auto">
-          
-          {/* Pill Badge Multi-Género */}
-          <div className="inline-flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2 px-4 py-2 rounded-2xl sm:rounded-full bg-[#9D4EDD]/10 border border-[#9D4EDD]/30 text-[#E0AAFF] text-[10px] tracking-widest uppercase mb-6 shadow-[0_0_15px_rgba(157,78,221,0.2)]">
-            <span className="flex items-center gap-1.5 font-bold text-white">
-              <Sparkles className="w-3.5 h-3.5 text-[#E0AAFF]" />
-              EXCLUSIVO PARA PRODUCTORES INDEPENDIENTES & INGENIEROS DE MEZCLA
-            </span>
-            <span className="text-[#E0AAFF]/80 text-[9px] font-mono sm:before:content-['•'] sm:before:mr-1.5">
-              (Rock • Synthwave • R&B • Trap • Electrónica)
-            </span>
+      {/* ── HERO COMPACTO & DIRECTO ── */}
+      <main className="max-w-5xl mx-auto px-6 pt-10 pb-16">
+        
+        {/* Titular Principal */}
+        <div className="text-center max-w-3xl mx-auto mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#9D4EDD]/10 border border-[#9D4EDD]/25 text-[#E0AAFF] text-[10px] font-mono uppercase tracking-widest mb-4">
+            <Sparkles className="w-3 h-3 text-[#E0AAFF]" />
+            PARA PRODUCTORES MUSICALES & COMPOSITORES EN FL STUDIO
           </div>
 
-          {/* Main Title - Napbak Typography Duo */}
-          <h1 className="font-modern text-4xl sm:text-6xl md:text-7xl font-light text-white leading-[1.12] tracking-tight mb-6">
-            Deja de adivinar por qué tus temas <br className="hidden sm:block" />
-            <span className="font-serif italic text-[#E0AAFF] font-normal">pierden pegada, brillo o volumen</span> en Spotify.
+          <h1 className="text-3xl sm:text-5xl font-light text-white leading-[1.15] tracking-tight mb-4">
+            El Método Paso a Paso en{' '}
+            <span className="inline-flex items-center gap-2 text-[#ff5e00] font-normal align-middle">
+              <img 
+                src="/fl-studio-logo.png" 
+                alt="FL Studio Logo" 
+                className="w-7 h-7 sm:w-10 sm:h-10 object-contain inline-block drop-shadow-[0_0_16px_rgba(255,94,0,0.5)]" 
+              />
+              FL Studio
+            </span>{' '}
+            para sonar con <span className="font-serif italic text-[#E0AAFF] font-normal">pegada y loudness comercial</span>.
           </h1>
 
-          <p className="text-sm sm:text-base md:text-lg text-[#9ca3af] max-w-2xl mx-auto mb-10 font-light leading-relaxed">
-            En una sesión en vivo de <strong className="text-white font-semibold">2.5 horas</strong>, abriremos el DAW para mostrarte la arquitectura acústica real de un master competitivo: separación quirúrgica de graves, baterías que cortan la mezcla y loudness profesional sin aplastar la dinámica. <span className="text-[#E0AAFF]">Incluye licencia vitalicia de nuestra suite analítica CTRL.</span>
+          <p className="text-sm sm:text-base text-[#9ca3af] font-light max-w-2xl mx-auto leading-relaxed">
+            Sin cursos eternos de 40 horas ni jerga confusa. En <strong className="text-white font-medium">2.5 horas prácticas dentro de FL Studio</strong>, aprenderás los detalles técnicos exactos que marcan la diferencia entre una maqueta casera y un track competitivo en Spotify, <span className="text-white/80">sin necesidad de ser ingeniero de sonido ni tener plugins caros.</span>
           </p>
-
-          {/* HARDWARE-STYLE COUNTDOWN */}
-          <div className="bg-[#0a0a0d]/90 border border-white/10 rounded-2xl p-5 max-w-md mx-auto mb-8 shadow-[0_0_40px_rgba(0,0,0,0.8)] backdrop-blur-md relative overflow-hidden">
-            <div className="flex items-center justify-between text-[8px] text-[#6b7280] uppercase tracking-[0.3em] mb-3 pb-2 border-b border-white/5 font-mono">
-              <span>[ TIMER // ENTRADA TEMPRANA ]</span>
-              <span className="text-[#E0AAFF]">PRECIO SUBE A $97</span>
-            </div>
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="bg-[#050505] p-2.5 rounded-xl border border-white/5">
-                <span className="text-2xl sm:text-3xl font-bold font-mono text-white">{timeLeft.days}</span>
-                <span className="block text-[9px] text-[#6b7280] tracking-widest uppercase mt-0.5">Días</span>
-              </div>
-              <div className="bg-[#050505] p-2.5 rounded-xl border border-white/5">
-                <span className="text-2xl sm:text-3xl font-bold font-mono text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
-                <span className="block text-[9px] text-[#6b7280] tracking-widest uppercase mt-0.5">Horas</span>
-              </div>
-              <div className="bg-[#050505] p-2.5 rounded-xl border border-white/5">
-                <span className="text-2xl sm:text-3xl font-bold font-mono text-[#E0AAFF]">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                <span className="block text-[9px] text-[#6b7280] tracking-widest uppercase mt-0.5">Min</span>
-              </div>
-              <div className="bg-[#050505] p-2.5 rounded-xl border border-white/5">
-                <span className="text-2xl sm:text-3xl font-bold font-mono text-[#9D4EDD]">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                <span className="block text-[9px] text-[#6b7280] tracking-widest uppercase mt-0.5">Seg</span>
-              </div>
-            </div>
-          </div>
-
-          {/* CALL TO ACTION BUTTON */}
-          <div className="max-w-md mx-auto mb-4">
-            <a 
-              href="#inscribirme"
-              className="w-full py-4 px-8 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-xs sm:text-sm tracking-[0.15em] uppercase transition-all duration-300 shadow-[0_0_35px_rgba(157,78,221,0.45)] hover:shadow-[0_0_55px_rgba(157,78,221,0.75)] hover:scale-[1.02] flex items-center justify-center gap-2"
-            >
-              <span>Reservar Mi Cupo + Licencia CTRL ($47)</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
-            <p className="text-[10px] text-[#6b7280] tracking-wider uppercase font-mono mt-3">
-              Acceso inmediato al software + Grabación 4K vitalicia + Garantía de 7 días
-            </p>
-          </div>
-
-          {/* Social Proof & Guarantee Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-[10px] tracking-widest uppercase text-[#9ca3af] mt-6">
-            <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-[#1DB954]" /> Garantía 7 Días</span>
-            <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-[#E0AAFF]" /> 18/30 Cupos Confirmados</span>
-            <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-[#9D4EDD]" /> Sesión + Grabación 4K</span>
-          </div>
-
         </div>
-      </section>
 
-      {/* ── THE PAIN: POR QUÉ NO FUNCIONAN LOS PREGRABADOS ─ */}
-      <section className="py-20 px-6 md:px-12 border-t border-white/5 bg-[#060608]/80 relative z-10">
-        <div className="max-w-5xl mx-auto">
-          
-          <div className="text-center mb-14">
-            <span className="text-[10px] tracking-[0.4em] text-[#9D4EDD] uppercase">01 // LA REALIDAD DE LA INDUSTRIA</span>
-            <h2 className="font-modern text-3xl sm:text-5xl font-light text-white mt-2">
-              ¿Por qué los cursos de 40 horas en Google Drive <br />
-              <span className="font-serif italic text-white/70">se quedan juntando polvo digital</span>?
-            </h2>
-            <p className="text-xs sm:text-sm text-[#9ca3af] max-w-xl mx-auto mt-4 font-light leading-relaxed">
-              En 2026 nadie tiene tiempo para devorarse 15 horas de teoría confusa. Cuando estás en el estudio necesitas soluciones mecánicas, directas y con oídos entrenados revisando tu trabajo.
-            </p>
+        {/* Tira Resumen: Lo que te llevas por $47 (Grid Atómico) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto mb-10">
+          <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 text-center">
+            <img 
+              src="/fl-studio-logo.png" 
+              alt="FL Studio" 
+              className="w-4 h-4 object-contain mx-auto mb-1.5 opacity-90 drop-shadow-[0_0_8px_rgba(255,94,0,0.5)]" 
+            />
+            <div className="text-xs font-semibold text-white">FL Studio en Vivo</div>
+            <div className="text-[10px] text-[#6b7280]">2.5h de sesión práctica</div>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-all duration-300 group">
-              <div className="text-[10px] tracking-widest text-[#E0AAFF] font-mono mb-2">01 // MUD & MÁSCARA FRECUENCIAL</div>
-              <h3 className="font-modern text-lg text-white font-medium mb-3">El bajo se traga al bombo y los sintes ensucian la voz</h3>
-              <p className="text-xs text-[#9ca3af] leading-relaxed font-light">
-                El bajo se traga el bombo, las guitarras ahogan a la voz y los sintes ensucian el campo estéreo. Intentas empujar el limitador para que suene "grande", pero el compresor frena todo y el track pierde vida.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-all duration-300 group">
-              <div className="text-[10px] tracking-widest text-[#E0AAFF] font-mono mb-2">02 // STREAMING PENALTY</div>
-              <h3 className="font-modern text-lg text-white font-medium mb-3">El castigo del algoritmo de Spotify</h3>
-              <p className="text-xs text-[#9ca3af] leading-relaxed font-light">
-                Crees que apretar a -7 LUFS te hará sonar comercial. Spotify detecta el exceso de energía acumulada, activa la normalización algorítmica y baja tu canción un 30% más que las referencias profesionales.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-all duration-300 group">
-              <div className="text-[10px] tracking-widest text-[#E0AAFF] font-mono mb-2">03 // FALTA DE CRITERIO OBJETIVO</div>
-              <h3 className="font-modern text-lg text-white font-medium mb-3">Falta de criterio analítico objetivo</h3>
-              <p className="text-xs text-[#9ca3af] leading-relaxed font-light">
-                Muchos tutoriales te recomiendan cadenas de plugins analógicos caros, pero nadie te enseña a leer qué está pasando matemáticamente con tus transientes en tu propia sala.
-              </p>
-            </div>
-
+          <div className="p-3.5 rounded-xl bg-[#9D4EDD]/10 border border-[#9D4EDD]/30 text-center shadow-[0_0_15px_rgba(157,78,221,0.15)]">
+            <Zap className="w-4 h-4 text-[#E0AAFF] mx-auto mb-1.5" />
+            <div className="text-xs font-semibold text-white">Suite DSP CTRL</div>
+            <div className="text-[10px] text-[#E0AAFF]">Licencia vitalicia incluida</div>
+          </div>
+          <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 text-center">
+            <Volume2 className="w-4 h-4 text-[#9D4EDD] mx-auto mb-1.5" />
+            <div className="text-xs font-semibold text-white">Casos Clínicos</div>
+            <div className="text-[10px] text-[#6b7280]">Auditoría de pistas en directo</div>
+          </div>
+          <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 text-center">
+            <Check className="w-4 h-4 text-[#1DB954] mx-auto mb-1.5" />
+            <div className="text-xs font-semibold text-white">Grabación 4K</div>
+            <div className="text-[10px] text-[#6b7280]">Acceso permanente de por vida</div>
           </div>
         </div>
-      </section>
 
-      {/* ── AGENDA EN DIRECTO (2.5 HORAS PRÁCTICAS) ─── */}
-      <section className="py-24 px-6 md:px-12 border-t border-white/5 relative z-10">
-        <div className="max-w-4xl mx-auto">
+        {/* ── GRID PRINCIPAL: TEMARIO + CHECKOUT LADO A LADO ── */}
+        <div className="grid lg:grid-cols-12 gap-8 items-start max-w-5xl mx-auto">
           
-          <div className="text-center mb-16">
-            <span className="text-[10px] tracking-[0.4em] text-[#9D4EDD] uppercase">02 // ESTRUCTURA DE LA SESIÓN</span>
-            <h2 className="font-modern text-3xl sm:text-5xl font-light text-white mt-2">
-              Lo que vamos a desarmar juntos <br />
-              <span className="font-serif italic text-[#E0AAFF]">en 2.5 horas paso a paso</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-[#9ca3af] mt-3 font-light">
-              Sin relleno. Abrimos el DAW, tomamos un track crudo con múltiples capas e instrumentos y lo llevamos a estándar comercial.
-            </p>
-          </div>
-
-          <div className="space-y-4">
+          {/* COLUMNA IZQUIERDA: TEMARIO CONCISO (7 columnas) */}
+          <div className="lg:col-span-6 space-y-4">
             
-            {/* Bloque 01 */}
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/40 transition-colors flex items-start gap-5">
-              <div className="w-12 h-12 rounded-xl bg-[#9D4EDD]/10 border border-[#9D4EDD]/30 text-[#E0AAFF] flex items-center justify-center font-mono font-bold text-sm shrink-0">
-                01
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] tracking-widest uppercase text-[#9D4EDD] font-mono">00:00 — 00:45</span>
-                  <span className="text-[8px] tracking-widest text-[#6b7280] uppercase font-mono">[ ARCHITECTURE & BALANCE ]</span>
-                </div>
-                <h3 className="font-modern text-lg sm:text-xl font-light text-white">Separación Quirúrgica en Graves y Transientes</h3>
-                <p className="text-xs sm:text-sm text-[#9ca3af] mt-2 font-light leading-relaxed">
-                  Cómo tallar espacio entre bombos (acústicos o sintéticos), líneas de bajo y subgraves. Gestión de fase, sidechain dinámico por bandas y cómo hacer que cajas, claps y guitarras corten la mezcla con definición y pegada limpia.
-                </p>
-              </div>
+            <div className="pb-2 border-b border-white/5 flex items-center justify-between">
+              <span className="text-[10px] font-mono tracking-widest text-[#9D4EDD] uppercase font-bold">
+                EL SISTEMA FL STUDIO // 3 ETAPAS
+              </span>
+              <span className="text-[10px] font-mono text-[#6b7280]">Paso a paso en el mixer</span>
             </div>
 
-            {/* Bloque 02 */}
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/40 transition-colors flex items-start gap-5">
-              <div className="w-12 h-12 rounded-xl bg-[#9D4EDD]/10 border border-[#9D4EDD]/30 text-[#E0AAFF] flex items-center justify-center font-mono font-bold text-sm shrink-0">
-                02
+            {/* Módulo 1 */}
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-mono font-bold text-[#E0AAFF] bg-[#9D4EDD]/20 px-2 py-0.5 rounded">01</span>
+                <h3 className="text-sm font-medium text-white">Arquitectura & Ruteo en FL Studio: Graves Limpios</h3>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] tracking-widest uppercase text-[#9D4EDD] font-mono">00:45 — 01:30</span>
-                  <span className="text-[8px] tracking-widest text-[#6b7280] uppercase font-mono">[ STREAMING DSP ]</span>
-                </div>
-                <h3 className="font-modern text-lg sm:text-xl font-light text-white">Mastering Analítico con CTRL: El Secreto de los LUFS</h3>
-                <p className="text-xs sm:text-sm text-[#9ca3af] mt-2 font-light leading-relaxed">
-                  Aprenderás a interpretar LUFS Integrado, Short-Term y True Peak (dBTP) con 4x oversampling sin confusiones matemáticas. Sabrás exactamente cuándo detenerte para que tu track suene alto pero dinámico.
-                </p>
-              </div>
+              <p className="text-xs text-[#9ca3af] font-light leading-relaxed pl-7">
+                Cómo configurar el mixer de FL Studio: buses de batería, sidechain por ruteo nativo, gestión de fase y cómo tallar espacio para que el bombo y el subgrave convivan sin ensuciar.
+              </p>
             </div>
 
-            {/* Bloque 03 */}
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/40 transition-colors flex items-start gap-5">
-              <div className="w-12 h-12 rounded-xl bg-[#9D4EDD]/10 border border-[#9D4EDD]/30 text-[#E0AAFF] flex items-center justify-center font-mono font-bold text-sm shrink-0">
-                03
+            {/* Módulo 2 */}
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-mono font-bold text-[#E0AAFF] bg-[#9D4EDD]/20 px-2 py-0.5 rounded">02</span>
+                <h3 className="text-sm font-medium text-white">Mastering Analítico & Los Secretos de los LUFS</h3>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] tracking-widest uppercase text-[#9D4EDD] font-mono">01:30 — 02:30</span>
-                  <span className="text-[8px] tracking-widest text-[#6b7280] uppercase font-mono">[ CLINIC DE DIAGNÓSTICO EN VIVO ]</span>
-                </div>
-                <h3 className="font-modern text-lg sm:text-xl font-light text-white">Auditoría Quirúrgica de Pistas en Tiempo Real</h3>
-                <p className="text-xs sm:text-sm text-[#9ca3af] mt-2 font-light leading-relaxed">
-                  Subirás tu pista a nuestro enlace privado. Seleccionaremos proyectos en pantalla compartida y pasaremos los tracks por CTRL en directo. Verás con tus propios ojos y oídos la diferencia entre ecualizar a ciegas y ajustar milimétricamente el espacio dinámico. Te llevarás las notas exactas para corregir tu mezcla esa misma noche.
+              <p className="text-xs text-[#9ca3af] font-light leading-relaxed pl-7">
+                Cómo empujar tu cadena de master en FL Studio a niveles competitivos (-9 a -7 LUFS) sin clipping áspero ni penalización de Spotify, usando la suite de medición CTRL.
+              </p>
+            </div>
+
+            {/* Módulo 3 */}
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#9D4EDD]/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-mono font-bold text-[#E0AAFF] bg-[#9D4EDD]/20 px-2 py-0.5 rounded">03</span>
+                <h3 className="text-sm font-medium text-white">Clinic en Vivo: Auditoría de Casos Seleccionados</h3>
+              </div>
+              <p className="text-xs text-[#9ca3af] font-light leading-relaxed pl-7">
+                Elegimos 3-4 proyectos representativos postulados por los asistentes para diagnosticar y corregir en directo. Verás las soluciones reales aplicadas paso a paso a casos típicos.
+              </p>
+            </div>
+
+            {/* Garantía & Social Proof Compacto */}
+            <div className="p-4 rounded-xl bg-[#1DB954]/5 border border-[#1DB954]/20 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-[#1DB954] shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-semibold text-white">Garantía Incondicional de 7 Días</h4>
+                <p className="text-[11px] text-[#9ca3af] font-light leading-snug mt-0.5">
+                  Si tras la primera hora sientes que no transformó tu criterio de mezcla en FL Studio, te reembolsamos el 100% de tus $47 sin preguntas. Te quedas con el material de apoyo.
                 </p>
               </div>
             </div>
 
           </div>
-        </div>
-      </section>
 
-      {/* ── EL BUNDLE COMPLETO (THE STACK $47) ───────── */}
-      <section id="inscribirme" className="py-24 px-6 md:px-12 border-t border-white/5 bg-[#060608]/90 relative z-10">
-        <div className="max-w-3xl mx-auto">
-          
-          <div className="text-center mb-12">
-            <span className="text-[10px] tracking-[0.4em] text-[#9D4EDD] uppercase">03 // OFERTA ESPECIAL</span>
-            <h2 className="font-modern text-3xl sm:text-5xl font-light text-white mt-2">
-              Todo lo que recibes <span className="font-serif italic text-[#E0AAFF]">hoy por $47 USD</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-[#9ca3af] mt-2 font-light">
-              Pago único. Sin suscripciones recurrentes ni costes ocultos.
-            </p>
-          </div>
-
-          {/* Hardware Container Style */}
-          <div className="bg-[#08080c] border border-white/10 hover:border-[#9D4EDD]/40 rounded-3xl p-6 sm:p-10 shadow-[0_0_60px_rgba(0,0,0,0.9)] relative transition-all duration-500">
+          {/* COLUMNA DERECHA: TARJETA DE CHECKOUT DIRECTO (5 columnas) */}
+          <div id="checkout" className="lg:col-span-6 bg-[#09090d] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
             
-            {/* Top Tag */}
-            <div className="flex items-center justify-between pb-6 mb-6 border-b border-white/5">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#1DB954] animate-pulse"></span>
-                <span className="font-mono text-[10px] tracking-widest uppercase text-white font-bold">[ FULL ACCESS COHORT ]</span>
-              </div>
-              <span className="text-[10px] tracking-widest text-[#E0AAFF] font-mono">EDICIÓN 2026</span>
-            </div>
-
-            {/* Stack Items */}
-            <div className="space-y-4 mb-8">
+            {/* Header del Ticket con Bundle Visual 3-en-1 */}
+            <div className="pb-4 mb-4 border-b border-white/5">
               
-              <div className="flex items-start gap-3.5 pb-3 border-b border-white/[0.03]">
-                <div className="w-5 h-5 rounded-full bg-[#9D4EDD]/20 text-[#E0AAFF] flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+              {/* Barra superior de estado / temporizador */}
+              <div className="flex items-center justify-between gap-1 mb-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#1DB954] animate-pulse"></span>
+                  <span className="text-[9px] font-mono uppercase text-[#E0AAFF] tracking-wider font-bold">
+                    BUNDLE 3 EN 1 // ACCESO COMPLETO
+                  </span>
                 </div>
-                <div className="flex-1">
-                  <p className="font-modern text-white text-sm sm:text-base font-normal">Sesión Interactiva Masterclass en Vivo (2.5 Horas)</p>
-                  <p className="text-xs text-[#6b7280] font-light mt-0.5">Arquitectura acústica, apertura de DAW y resolución directa de dudas.</p>
+                <div className="bg-[#050505] px-2.5 py-0.5 rounded border border-white/5 font-mono">
+                  <span className="text-[8px] text-[#6b7280] uppercase">Cierra: </span>
+                  <span className="text-[10px] font-bold text-[#E0AAFF]">
+                    {timeLeft.days}d {String(timeLeft.hours).padStart(2,'0')}h {String(timeLeft.minutes).padStart(2,'0')}m
+                  </span>
                 </div>
-                <span className="text-xs font-mono text-[#6b7280] line-through">$97</span>
               </div>
 
-              {/* CTRL Spotlight Item - The Trojan Horse */}
-              <div className="flex items-start gap-3.5 pb-3 border-b border-[#9D4EDD]/30 bg-[#9D4EDD]/10 -mx-4 px-4 py-3 rounded-2xl border border-[#9D4EDD]/20 shadow-[0_0_20px_rgba(157,78,221,0.15)]">
-                <div className="w-5 h-5 rounded-full bg-[#9D4EDD] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_12px_rgba(157,78,221,0.7)]">
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-modern text-white text-sm sm:text-base font-medium">Licencia Vitalicia: Suite Analítica DSP "CTRL"</p>
-                    <span className="text-[8px] bg-[#9D4EDD] text-white font-mono px-2 py-0.5 rounded uppercase font-bold tracking-wider">ACTIVO EXCLUSIVO</span>
-                  </div>
-                  <p className="text-xs text-[#E0AAFF]/80 font-light mt-1 leading-relaxed">
-                    Software propietario desarrollado para calcular EBU R128, True Peak con 4x oversampling y simulación de penalización algorítmica. Olvídate de depender de plugins de $300.
-                  </p>
-                </div>
-                <span className="text-xs font-mono text-[#E0AAFF] line-through">$120</span>
-              </div>
-
-              <div className="flex items-start gap-3.5 pb-3 border-b border-white/[0.03]">
-                <div className="w-5 h-5 rounded-full bg-[#9D4EDD]/20 text-[#E0AAFF] flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-modern text-white text-sm sm:text-base font-normal">Grabación Maestra 4K con Acceso Ilimitado</p>
-                  <p className="text-xs text-[#6b7280] font-light mt-0.5">Acceso permanente alojado en tu área privada para repasar cada detalle siempre.</p>
-                </div>
-                <span className="text-xs font-mono text-[#6b7280] line-through">$49</span>
-              </div>
-
-              <div className="flex items-start gap-3.5 pb-3 border-b border-white/[0.03]">
-                <div className="w-5 h-5 rounded-full bg-[#9D4EDD]/20 text-[#E0AAFF] flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-modern text-white text-sm sm:text-base font-normal">Cheat Sheet PDF: Arquitectura de Frecuencias y Sidechain Quirúrgico</p>
-                  <p className="text-xs text-[#6b7280] font-light mt-0.5">Mapa de bolsillo para limpiar resonancias de guitarras, sintes, 808s y abrir espacio espectral en segundos.</p>
-                </div>
-                <span className="text-xs font-mono text-[#6b7280] line-through">$27</span>
-              </div>
-
-              <div className="flex items-start gap-3.5">
-                <div className="w-5 h-5 rounded-full bg-[#9D4EDD]/20 text-[#E0AAFF] flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-modern text-white text-sm sm:text-base font-normal">Acceso a la Comunidad Privada de Productores</p>
-                  <p className="text-xs text-[#6b7280] font-light mt-0.5">Networking, intercambio de stems, feedback continuo y colaboraciones.</p>
-                </div>
-                <span className="text-xs font-mono text-[#6b7280] line-through">$37</span>
-              </div>
-
-            </div>
-
-            {/* Price Calculation Box & Multi-Gateway Checkout */}
-            <div className="pt-6 border-t border-white/10">
-              <div className="text-center mb-6">
-                <p className="text-[10px] text-[#6b7280] uppercase tracking-[0.3em] font-mono mb-1">
-                  VALOR REAL INTEGRADO: <span className="line-through text-white/40">$330 USD</span>
-                </p>
+              {/* Tira Visual del Bundle: [Caja 3D] + [Suite CTRL UI] + [Piano VST] */}
+              <div className="bg-[#050505]/80 border border-white/5 rounded-xl p-3 mb-4 flex items-center justify-between gap-1.5 sm:gap-2">
                 
-                <div className="flex items-baseline justify-center gap-2 mb-2">
-                  <span className="text-5xl sm:text-6xl font-light font-modern text-white tracking-tight">$47</span>
-                  <span className="text-[#E0AAFF] text-sm font-mono tracking-widest">USD</span>
+                {/* 1. Caja Mockup 3D */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-[#9D4EDD]/25 blur-sm rounded-lg pointer-events-none"></div>
+                    <img 
+                      src="/toma-el-control.png" 
+                      alt="Masterclass FL Studio" 
+                      className="w-14 sm:w-16 h-auto object-contain relative drop-shadow-[0_8px_20px_rgba(157,78,221,0.4)]" 
+                    />
+                  </div>
+                  <span className="text-[9px] font-mono text-white font-medium mt-1">Masterclass</span>
+                  <span className="text-[8px] font-mono text-[#6b7280]">FL Studio 2.5h</span>
                 </div>
 
-                <p className="text-[11px] text-amber-400 font-mono tracking-wider">
-                  ⚡ Precio especial de prelanzamiento para los primeros 30 registros
-                </p>
-              </div>
+                {/* Signo Más */}
+                <span className="text-white/40 font-mono text-sm sm:text-base font-bold select-none">+</span>
 
-              {/* TABS DE MÉTODOS DE PAGO */}
-              <div className="mb-6">
-                <p className="text-[10px] text-[#6b7280] font-mono uppercase tracking-widest text-center mb-3">
-                  SELECCIONA TU FORMA DE PAGO PREFERIDA:
-                </p>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {/* Gumroad Tab */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab('gumroad')}
-                    className={`py-3 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 relative ${
-                      paymentTab === 'gumroad'
-                        ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] text-white shadow-[0_0_15px_rgba(157,78,221,0.25)]'
-                        : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <CreditCard className="w-4 h-4 text-[#E0AAFF]" />
-                      <span className="text-xs font-modern font-semibold">Gumroad</span>
-                    </div>
-                    <span className="text-[8px] text-[#1DB954] font-mono tracking-tight uppercase font-bold">Tarjeta & PayPal</span>
-                  </button>
-
-                  {/* Pago Móvil Tab */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab('pagomovil')}
-                    className={`py-3 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
-                      paymentTab === 'pagomovil'
-                        ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] text-white shadow-[0_0_15px_rgba(157,78,221,0.25)]'
-                        : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Smartphone className="w-4 h-4 text-[#38bdf8]" />
-                      <span className="text-xs font-modern font-semibold">Pago Móvil</span>
-                    </div>
-                    <span className="text-[8px] text-[#38bdf8] font-mono tracking-tight uppercase font-bold">Bolívares (Bs)</span>
-                  </button>
-
-                  {/* Binance Tab */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab('binance')}
-                    className={`py-3 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
-                      paymentTab === 'binance'
-                        ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] text-white shadow-[0_0_15px_rgba(157,78,221,0.25)]'
-                        : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Wallet className="w-4 h-4 text-amber-400" />
-                      <span className="text-xs font-modern font-semibold">Binance</span>
-                    </div>
-                    <span className="text-[8px] text-amber-400 font-mono tracking-tight uppercase font-bold">USDT / Pay</span>
-                  </button>
-
-                  {/* PayPal Directo Tab */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab('paypal')}
-                    className={`py-3 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
-                      paymentTab === 'paypal'
-                        ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] text-white shadow-[0_0_15px_rgba(157,78,221,0.25)]'
-                        : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:border-white/20 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <ExternalLink className="w-4 h-4 text-[#60a5fa]" />
-                      <span className="text-xs font-modern font-semibold">PayPal.me</span>
-                    </div>
-                    <span className="text-[8px] text-[#60a5fa] font-mono tracking-tight uppercase font-bold">Saldo Directo</span>
-                  </button>
+                {/* 2. Suite DSP CTRL UI */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="relative w-20 sm:w-28 rounded-lg overflow-hidden border border-white/10 shadow-lg">
+                    <img 
+                      src="/ctrl-suite-ui.png" 
+                      alt="Suite DSP CTRL" 
+                      className="w-full h-auto object-cover" 
+                    />
+                  </div>
+                  <span className="text-[9px] font-mono text-white font-medium mt-1">Suite CTRL</span>
+                  <span className="text-[8px] font-mono text-[#E0AAFF]">Web DSP</span>
                 </div>
+
+                {/* Signo Más */}
+                <span className="text-white/40 font-mono text-sm sm:text-base font-bold select-none">+</span>
+
+                {/* 3. Piano VST Instrument */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-14 sm:w-16 h-12 sm:h-14 rounded-lg bg-gradient-to-br from-[#161622] to-[#0a0a10] border border-[#9D4EDD]/40 flex flex-col items-center justify-center p-1 shadow-md relative overflow-hidden">
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#9D4EDD]/30 rounded-full blur-xs"></div>
+                    <Piano className="w-5 h-5 text-[#E0AAFF] mb-0.5" />
+                    <span className="text-[7px] font-mono font-bold text-white tracking-wider">PIANO VST</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-white font-medium mt-1">Piano VST</span>
+                  <span className="text-[8px] font-mono text-[#1DB954]">Plugin Gratis</span>
+                </div>
+
               </div>
 
-              {/* ── CONTENIDO DEL TAB SELECCIONADO ── */}
-              
-              {/* TAB 1: GUMROAD (AUTOMÁTICO) */}
-              {paymentTab === 'gumroad' && (
-                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 text-center animate-fadeIn">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1DB954]/10 border border-[#1DB954]/25 text-[#1DB954] text-[9px] font-mono uppercase tracking-widest mb-4">
+              {/* Fila de Precio y Entrega */}
+              <div className="flex items-baseline justify-between pt-1">
+                <div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl sm:text-4xl font-light text-white font-modern transition-all">${currentTotal}</span>
+                    <span className="text-xs font-mono text-[#9ca3af]">USD</span>
+                    <span className="text-xs font-mono text-[#6b7280] line-through ml-1.5">${baseStrikePrice}</span>
+                  </div>
+                  <p className="text-[10px] text-[#6b7280] font-mono">
+                    {selectedAddonsList.length > 0 
+                      ? `Workshop Base + ${selectedAddonsList.length} Add-on${selectedAddonsList.length > 1 ? 's' : ''}` 
+                      : 'Todo el bundle incluido • Acceso de por vida'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[9px] font-mono text-[#1DB954] bg-[#1DB954]/10 border border-[#1DB954]/25 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954] animate-pulse"></span>
-                    ENTREGA AUTOMÁTICA E INMEDIATA 24/7
-                  </div>
-
-                  <h3 className="font-modern text-lg sm:text-xl text-white font-light mb-2">
-                    Pago Internacional con Tarjeta o PayPal
-                  </h3>
-                  <p className="text-xs text-[#9ca3af] font-light max-w-lg mx-auto mb-6">
-                    Procesado de forma 100% segura por <strong className="text-white">Gumroad</strong>. Acepta tarjetas de crédito/débito internacionales y cuenta de PayPal. Recibirás tu acceso y licencia en segundos.
-                  </p>
-
-                  <a
-                    href={GUMROAD_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full block py-4 px-8 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-xs sm:text-sm tracking-[0.18em] uppercase transition-all duration-300 shadow-[0_0_35px_rgba(157,78,221,0.45)] hover:shadow-[0_0_55px_rgba(157,78,221,0.75)] hover:scale-[1.01]"
-                  >
-                    Pagar $47 USD con Tarjeta o PayPal en Gumroad ↗
-                  </a>
+                    Entrega Inmediata
+                  </span>
                 </div>
-              )}
+              </div>
 
-              {/* TAB 2: PAGO MÓVIL (BOLÍVARES) */}
-              {paymentTab === 'pagomovil' && (
-                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 animate-fadeIn">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-white/5">
-                    <div>
-                      <h3 className="font-modern text-lg text-white font-light flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-[#38bdf8]" />
-                        Datos para Pago Móvil (Venezuela)
-                      </h3>
-                      <p className="text-xs text-[#9ca3af] font-light mt-0.5">
-                        Transfiere el equivalente a <strong className="text-white">$47 USD</strong> a la tasa oficial del BCV del día.
-                      </p>
-                    </div>
-                    <span className="text-[9px] font-mono text-[#38bdf8] bg-[#38bdf8]/10 border border-[#38bdf8]/25 px-2.5 py-1 rounded-full uppercase tracking-wider w-fit">
-                      TASA OFICIAL BCV
-                    </span>
-                  </div>
+            </div>
 
-                  {/* Fila de Datos Bancarios con botones copiar */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                    
-                    {/* Banco */}
-                    <div className="bg-[#050505] p-3 rounded-xl border border-white/5">
-                      <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">Banco</span>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white text-xs font-semibold">Provincial (0108)</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard('0108', 'pm_banco')}
-                          className="text-[#6b7280] hover:text-white p-1"
-                          title="Copiar código de banco"
-                        >
-                          {copiedKey === 'pm_banco' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
+            {/* ── ADD-ONS EXCLUSIVOS DE CHECKOUT (OPCIONALES) ── */}
+            <div className="mb-4 space-y-2">
+              <span className="text-[9px] font-mono text-[#E0AAFF] uppercase tracking-wider block font-bold">
+                ⚡ POTENCIA TU INSCRIPCIÓN (ADD-ONS OPCIONALES):
+              </span>
 
-                    {/* Teléfono */}
-                    <div className="bg-[#050505] p-3 rounded-xl border border-white/5">
-                      <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">Teléfono</span>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white text-xs font-mono font-semibold">04121479466</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard('04121479466', 'pm_tel')}
-                          className="text-[#6b7280] hover:text-white p-1"
-                          title="Copiar teléfono"
-                        >
-                          {copiedKey === 'pm_tel' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Cédula */}
-                    <div className="bg-[#050505] p-3 rounded-xl border border-white/5">
-                      <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">Cédula</span>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white text-xs font-mono font-semibold">19531198</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard('19531198', 'pm_ci')}
-                          className="text-[#6b7280] hover:text-white p-1"
-                          title="Copiar cédula"
-                        >
-                          {copiedKey === 'pm_ci' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {copiedKey && (
-                    <div className="text-center text-[10px] text-[#1DB954] font-mono mb-4 animate-pulse">
-                      ✓ Dato copiado al portapapeles
-                    </div>
-                  )}
-
-                  <p className="text-[11px] text-[#9ca3af] font-mono text-center mb-4">
-                    👇 Realiza tu pago móvil y notifícalo con el formulario inferior para reservar tu cupo y software de inmediato:
-                  </p>
-                </div>
-              )}
-
-              {/* TAB 3: BINANCE PAY (USDT) */}
-              {paymentTab === 'binance' && (
-                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 animate-fadeIn">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-white/5">
-                    <div>
-                      <h3 className="font-modern text-lg text-white font-light flex items-center gap-2">
-                        <Wallet className="w-4 h-4 text-amber-400" />
-                        Pagar con Binance Pay / Cripto
-                      </h3>
-                      <p className="text-xs text-[#9ca3af] font-light mt-0.5">
-                        Transfiere <strong className="text-white">47 USDT</strong> a través de Binance Pay sin comisiones.
-                      </p>
-                    </div>
-                    <span className="text-[9px] font-mono text-amber-400 bg-amber-400/10 border border-amber-400/25 px-2.5 py-1 rounded-full uppercase tracking-wider w-fit">
-                      0% COMISIÓN
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
-                    {/* Código QR oficial de Binance Pay */}
-                    <div className="bg-white p-2.5 rounded-2xl shadow-xl flex flex-col items-center shrink-0">
-                      <img 
-                        src="/binance-qr.png" 
-                        alt="QR Oficial Binance Pay 93927162" 
-                        className="w-32 h-32 object-contain rounded-lg"
-                      />
-                      <span className="text-[8px] font-mono text-black uppercase font-bold tracking-wider mt-1.5">
-                        Escanear en App Binance
+              {/* Add-on 1: Mastering de 1 tema (+ $20) */}
+              <div 
+                onClick={() => setIncludeMastering(!includeMastering)}
+                className={`p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                  includeMastering 
+                    ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] shadow-[0_0_15px_rgba(157,78,221,0.2)]' 
+                    : 'bg-white/[0.02] border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  <input 
+                    type="checkbox"
+                    checked={includeMastering}
+                    onChange={(e) => setIncludeMastering(e.target.checked)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-0.5 w-4 h-4 rounded border-white/20 text-[#9D4EDD] focus:ring-0 cursor-pointer accent-[#9D4EDD]"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-semibold text-white">
+                        Mastering de 1 Tema por Napbak
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-[#E0AAFF] bg-[#9D4EDD]/20 px-1.5 py-0.5 rounded">
+                        + $20 USD
                       </span>
                     </div>
-
-                    {/* Datos de Binance */}
-                    <div className="space-y-3 w-full">
-                      <div className="bg-[#050505] p-3 rounded-xl border border-white/5 flex items-center justify-between">
-                        <div>
-                          <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider">Binance Pay ID</span>
-                          <span className="text-white text-sm font-mono font-bold">93927162</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard('93927162', 'binance_id')}
-                          className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-[#E0AAFF] font-mono flex items-center gap-1.5 transition-colors"
-                        >
-                          {copiedKey === 'binance_id' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedKey === 'binance_id' ? 'Copiado' : 'Copiar ID'}</span>
-                        </button>
-                      </div>
-
-                      <div className="bg-[#050505] p-3 rounded-xl border border-white/5 flex items-center justify-between">
-                        <div>
-                          <span className="block text-[9px] text-[#6b7280] font-mono uppercase tracking-wider">Correo Binance</span>
-                          <span className="text-white text-sm font-mono font-bold">napbak@gmail.com</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard('napbak@gmail.com', 'binance_mail')}
-                          className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-[#E0AAFF] font-mono flex items-center gap-1.5 transition-colors"
-                        >
-                          {copiedKey === 'binance_mail' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedKey === 'binance_mail' ? 'Copiado' : 'Copiar'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-[#9ca3af] font-mono text-center mb-2">
-                    👇 Pega tu Order ID o Referencia de Binance en el formulario inferior para verificar tu acceso:
-                  </p>
-                </div>
-              )}
-
-              {/* TAB 4: PAYPAL DIRECTO */}
-              {paymentTab === 'paypal' && (
-                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 animate-fadeIn">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-white/5">
-                    <div>
-                      <h3 className="font-modern text-lg text-white font-light flex items-center gap-2">
-                        <ExternalLink className="w-4 h-4 text-[#60a5fa]" />
-                        Transferencia Directa por PayPal
-                      </h3>
-                      <p className="text-xs text-[#9ca3af] font-light mt-0.5">
-                        Envía <strong className="text-white">$47 USD</strong> directamente desde tu saldo de PayPal personal.
-                      </p>
-                    </div>
-                    <span className="text-[9px] font-mono text-[#60a5fa] bg-[#60a5fa]/10 border border-[#60a5fa]/25 px-2.5 py-1 rounded-full uppercase tracking-wider w-fit">
-                      PAYPAL.ME
-                    </span>
-                  </div>
-
-                  <div className="bg-[#050505] p-4 rounded-xl border border-white/5 mb-6 text-center">
-                    <p className="text-xs text-white mb-3 font-mono">
-                      Enlace de pago configurado por $47 USD:
+                    <p className="text-[10px] text-[#9ca3af] font-light leading-snug mt-0.5">
+                      Envías el .WAV de tu track y Napbak lo masteriza con CTRL para entrega 24-bit listo para streaming (Valor regular: $60 USD).
                     </p>
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                      <a
-                        href={PAYPAL_ME_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="py-3 px-6 rounded-full bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold text-xs font-mono uppercase tracking-wider inline-flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(0,112,186,0.4)]"
-                      >
-                        <span>Abrir PayPal.me ($47 USD)</span>
-                        <ArrowUpRight className="w-4 h-4" />
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(PAYPAL_ME_URL, 'paypal_url')}
-                        className="py-3 px-4 rounded-full bg-white/5 hover:bg-white/10 text-xs text-white font-mono flex items-center gap-2 border border-white/10 transition-colors"
-                      >
-                        {copiedKey === 'paypal_url' ? <CheckCheck className="w-4 h-4 text-[#1DB954]" /> : <Copy className="w-4 h-4" />}
-                        <span>{copiedKey === 'paypal_url' ? 'Enlace Copiado' : 'Copiar Link'}</span>
-                      </button>
-                    </div>
                   </div>
-
-                  <p className="text-[11px] text-[#9ca3af] font-mono text-center mb-2">
-                    👇 Tras completar la transferencia en PayPal, introduce tu ID de transacción o correo en el formulario:
-                  </p>
                 </div>
-              )}
+              </div>
 
-              {/* ── FORMULARIO FORMSPREE PARA PAGOS MANUALES ── */}
-              {paymentTab !== 'gumroad' && (
-                <div className="mt-6 p-6 rounded-2xl bg-[#09090d] border border-[#9D4EDD]/30 shadow-[0_0_30px_rgba(157,78,221,0.15)]">
-                  
-                  {formStatus === 'success' ? (
-                    <div className="text-center py-6 space-y-4 animate-fadeIn">
-                      <div className="w-14 h-14 rounded-full bg-[#1DB954]/20 border border-[#1DB954]/40 text-[#1DB954] flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(29,185,84,0.4)]">
-                        <CheckCircle2 className="w-8 h-8" />
-                      </div>
-                      <h4 className="font-modern text-xl text-white font-light">
-                        ¡Comprobante Recibido con Éxito!
-                      </h4>
-                      <p className="text-xs text-[#9ca3af] max-w-md mx-auto leading-relaxed">
-                        Hemos registrado tu reporte para <strong className="text-white">{reportForm.name}</strong>. En un plazo máximo de 2 horas validaremos tu referencia y te enviaremos a <strong className="text-[#E0AAFF]">{reportForm.email}</strong> el enlace de acceso al aula del workshop y las instrucciones de tu suite <strong className="text-white">CTRL</strong>.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormStatus('idle');
-                          setReportForm({ name: '', email: '', reference: '', notes: '' });
-                        }}
-                        className="mt-4 text-xs font-mono text-[#E0AAFF] underline hover:text-white transition-colors"
-                      >
-                        Reportar otro pago o enviar una aclaración
-                      </button>
+              {/* Add-on 2: Plantilla Mixer Pro FL Studio (.FLP) (+ $15) */}
+              <div 
+                onClick={() => setIncludeTemplate(!includeTemplate)}
+                className={`p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                  includeTemplate 
+                    ? 'bg-[#9D4EDD]/15 border-[#9D4EDD] shadow-[0_0_15px_rgba(157,78,221,0.2)]' 
+                    : 'bg-white/[0.02] border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  <input 
+                    type="checkbox"
+                    checked={includeTemplate}
+                    onChange={(e) => setIncludeTemplate(e.target.checked)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-0.5 w-4 h-4 rounded border-white/20 text-[#9D4EDD] focus:ring-0 cursor-pointer accent-[#9D4EDD]"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-semibold text-white">
+                        Plantilla Mixer Pro FL Studio (.FLP)
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-[#E0AAFF] bg-[#9D4EDD]/20 px-1.5 py-0.5 rounded">
+                        + $15 USD
+                      </span>
                     </div>
-                  ) : (
-                    <form onSubmit={handleReportSubmit} className="space-y-4">
-                      <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                        <div className="flex items-center gap-2">
-                          <Send className="w-3.5 h-3.5 text-[#E0AAFF]" />
-                          <h4 className="font-modern text-sm text-white font-medium">
-                            Notificar Pago // {paymentTab === 'pagomovil' ? 'Pago Móvil Bs' : paymentTab === 'binance' ? 'Binance USDT' : 'PayPal'}
-                          </h4>
-                        </div>
-                        <span className="text-[8px] font-mono text-[#6b7280] uppercase tracking-widest">
-                          CONFIRMACIÓN RÁPIDA
+                    <p className="text-[10px] text-[#9ca3af] font-light leading-snug mt-0.5">
+                      Proyecto base de FL Studio listo para usar: buses por color, sidechain ruteado, cadenas nativas y ganancia calibrada a -6dB.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Add-on 3: Pase VIP Auditoría Garantizada (+ $27) */}
+              <div 
+                onClick={() => setIncludeVipAudit(!includeVipAudit)}
+                className={`p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                  includeVipAudit 
+                    ? 'bg-amber-400/10 border-amber-400/50 shadow-[0_0_15px_rgba(251,191,36,0.15)]' 
+                    : 'bg-white/[0.02] border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  <input 
+                    type="checkbox"
+                    checked={includeVipAudit}
+                    onChange={(e) => setIncludeVipAudit(e.target.checked)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-0.5 w-4 h-4 rounded border-white/20 text-amber-400 focus:ring-0 cursor-pointer accent-amber-400"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-white">
+                          Pase VIP: Auditoría Garantizada en Vivo
+                        </span>
+                        <span className="text-[7px] font-mono bg-amber-400/20 text-amber-300 px-1 rounded uppercase font-bold">
+                          Solo 5 cupos
                         </span>
                       </div>
+                      <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-400/20 px-1.5 py-0.5 rounded">
+                        + $27 USD
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#9ca3af] font-light leading-snug mt-0.5">
+                      Asegura que tu tema o stems sean abiertos y corregidos sí o sí en pantalla compartida durante el clinic del workshop.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                      {errorMessage && (
-                        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 shrink-0" />
-                          <span>{errorMessage}</span>
-                        </div>
-                      )}
+            </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[10px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">
-                            Tu Nombre y Apellido *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="Ej. Carlos Rodríguez"
-                            value={reportForm.name}
-                            onChange={(e) => setReportForm({ ...reportForm, name: e.target.value })}
-                            className="w-full bg-[#050505] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD] transition-colors"
-                          />
-                        </div>
+            {/* Selector de Pasarela */}
+            <div className="mb-4">
+              <span className="text-[9px] font-mono text-[#6b7280] uppercase tracking-wider block mb-2">
+                Selecciona tu método de pago:
+              </span>
+              <div className="grid grid-cols-4 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPaymentTab('gumroad')}
+                  className={`py-2 px-1 rounded-lg text-center font-mono text-[10px] transition-all border ${
+                    paymentTab === 'gumroad'
+                      ? 'bg-[#9D4EDD]/20 border-[#9D4EDD] text-white font-bold'
+                      : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:text-white'
+                  }`}
+                >
+                  Gumroad
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentTab('pagomovil')}
+                  className={`py-2 px-1 rounded-lg text-center font-mono text-[10px] transition-all border ${
+                    paymentTab === 'pagomovil'
+                      ? 'bg-[#9D4EDD]/20 border-[#9D4EDD] text-white font-bold'
+                      : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:text-white'
+                  }`}
+                >
+                  Pago Móvil
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentTab('binance')}
+                  className={`py-2 px-1 rounded-lg text-center font-mono text-[10px] transition-all border ${
+                    paymentTab === 'binance'
+                      ? 'bg-[#9D4EDD]/20 border-[#9D4EDD] text-white font-bold'
+                      : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:text-white'
+                  }`}
+                >
+                  Binance
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentTab('paypal')}
+                  className={`py-2 px-1 rounded-lg text-center font-mono text-[10px] transition-all border ${
+                    paymentTab === 'paypal'
+                      ? 'bg-[#9D4EDD]/20 border-[#9D4EDD] text-white font-bold'
+                      : 'bg-white/[0.02] border-white/5 text-[#9ca3af] hover:text-white'
+                  }`}
+                >
+                  PayPal
+                </button>
+              </div>
+            </div>
 
-                        <div>
-                          <label className="block text-[10px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">
-                            Correo de Acceso (Donde recibirás CTRL) *
-                          </label>
-                          <input
-                            type="email"
-                            required
-                            placeholder="tu.correo@ejemplo.com"
-                            value={reportForm.email}
-                            onChange={(e) => setReportForm({ ...reportForm, email: e.target.value })}
-                            className="w-full bg-[#050505] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD] transition-colors"
-                          />
-                        </div>
+            {/* CONTENIDO DE PAGO */}
+            
+            {/* Opción 1: Gumroad (Instantáneo) */}
+            {paymentTab === 'gumroad' && (
+              <div className="space-y-3">
+                <div className="bg-[#050505] p-3 rounded-xl border border-white/5 text-xs text-[#9ca3af] font-light">
+                  <span className="text-white font-medium block mb-1">Tarjeta de Débito/Crédito o PayPal Global</span>
+                  Procesado con cifrado seguro en Gumroad. Recibes acceso inmediato al aula y tu licencia de software al instante.
+                </div>
+                <a
+                  href={GUMROAD_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-xs tracking-widest uppercase transition-all duration-300 shadow-[0_0_25px_rgba(157,78,221,0.4)] flex items-center justify-center gap-2"
+                >
+                  <span>Pagar ${currentTotal} USD en Gumroad</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                {selectedAddonsList.length > 0 && (
+                  <p className="text-[10px] text-center text-[#E0AAFF]/70 font-mono">
+                    ✓ Incluye Workshop + {selectedAddonsList.length} add-on{selectedAddonsList.length > 1 ? 's' : ''} en el checkout directo
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Opción 2: Pago Móvil (Venezuela) */}
+            {paymentTab === 'pagomovil' && (
+              <div className="space-y-3">
+                <div className="bg-[#050505] p-3 rounded-xl border border-white/5 text-xs space-y-2.5">
+                  <div className="flex items-center justify-between text-[11px] pb-1.5 border-b border-white/5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954] animate-pulse"></span>
+                      <span className="text-[#9ca3af] font-mono">Tasa oficial BCV:</span>
+                      <span className="text-white font-mono font-medium">
+                        {loadingBcv ? 'Consultando...' : `Bs. ${bcvRate?.toFixed(2)} / USD`}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[#38bdf8] font-mono font-bold text-xs">
+                        {formattedBs ? `Bs. ${formattedBs}` : `$${currentTotal} USD al cambio`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {formattedBs && (
+                    <div className="bg-[#38bdf8]/10 border border-[#38bdf8]/20 p-2.5 rounded-lg flex items-center justify-between font-mono text-[11px]">
+                      <div>
+                        <span className="text-[#9ca3af] text-[10px] block">Monto total exacto a transferir:</span>
+                        <span className="text-[#38bdf8] font-bold text-sm">Bs. {formattedBs}</span>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[10px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">
-                            {paymentTab === 'pagomovil' ? 'Número de Referencia (Últimos dígitos) *' : paymentTab === 'binance' ? 'Binance Order ID / TxID *' : 'ID de Transacción PayPal *'}
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder={paymentTab === 'pagomovil' ? 'Ej. 847291' : paymentTab === 'binance' ? 'Ej. 248910248' : 'Ej. 4XY12894...'}
-                            value={reportForm.reference}
-                            onChange={(e) => setReportForm({ ...reportForm, reference: e.target.value })}
-                            className="w-full bg-[#050505] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD] transition-colors"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] text-[#6b7280] font-mono uppercase tracking-wider mb-1">
-                            Nota o Banco Emisor (Opcional)
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Ej. Banesco a Provincial / Titular..."
-                            value={reportForm.notes}
-                            onChange={(e) => setReportForm({ ...reportForm, notes: e.target.value })}
-                            className="w-full bg-[#050505] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD] transition-colors"
-                          />
-                        </div>
-                      </div>
-
                       <button
-                        type="submit"
-                        disabled={formStatus === 'sending'}
-                        className="w-full mt-2 py-3.5 px-6 rounded-full bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-bold text-xs tracking-widest uppercase transition-all duration-300 shadow-[0_0_25px_rgba(157,78,221,0.4)] disabled:opacity-50 flex items-center justify-center gap-2"
+                        type="button"
+                        onClick={() => copyToClipboard(formattedBs.replace(/\./g, '').replace(',', '.'), 'pm_monto')}
+                        className="px-2.5 py-1.5 rounded bg-[#38bdf8]/20 hover:bg-[#38bdf8]/30 text-[#38bdf8] text-[10px] flex items-center gap-1 transition-all"
                       >
-                        {formStatus === 'sending' ? (
-                          <>
-                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                            <span>Validando y Enviando Reporte...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Enviar Comprobante y Asegurar Cupo ($47 USD)</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
+                        {copiedKey === 'pm_monto' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedKey === 'pm_monto' ? 'Copiado' : 'Copiar Bs.'}</span>
                       </button>
-
-                      <p className="text-[9px] text-[#6b7280] text-center font-mono">
-                        🔒 Tu información está cifrada. Tras el envío recibirás la confirmación en tu correo.
-                      </p>
-                    </form>
+                    </div>
                   )}
 
+                  <div className="grid grid-cols-3 gap-1.5 font-mono text-[11px]">
+                    <div className="bg-white/[0.02] p-1.5 rounded flex items-center justify-between">
+                      <span>Provincial</span>
+                      <button type="button" onClick={() => copyToClipboard('0108', 'pm_b')} className="text-[#9D4EDD]">
+                        {copiedKey === 'pm_b' ? <CheckCheck className="w-3 h-3 text-[#1DB954]" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                    <div className="bg-white/[0.02] p-1.5 rounded flex items-center justify-between">
+                      <span>04121479466</span>
+                      <button type="button" onClick={() => copyToClipboard('04121479466', 'pm_t')} className="text-[#9D4EDD]">
+                        {copiedKey === 'pm_t' ? <CheckCheck className="w-3 h-3 text-[#1DB954]" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                    <div className="bg-white/[0.02] p-1.5 rounded flex items-center justify-between">
+                      <span>19531198</span>
+                      <button type="button" onClick={() => copyToClipboard('19531198', 'pm_c')} className="text-[#9D4EDD]">
+                        {copiedKey === 'pm_c' ? <CheckCheck className="w-3 h-3 text-[#1DB954]" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                  </div>
+                  {copiedKey && <span className="text-[10px] text-[#1DB954] block text-center font-mono">✓ Copiado al portapapeles</span>}
                 </div>
-              )}
-
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-[10px] text-[#6b7280] font-mono uppercase tracking-widest">
-                <span className="flex items-center gap-1 text-[#1DB954]"><Lock className="w-3 h-3" /> Transacción Segura</span>
-                <span>•</span>
-                <span>Licencia Vitalicia CTRL Incluida</span>
-                <span>•</span>
-                <span>Auditoría de stems en Directo</span>
               </div>
-            </div>
+            )}
 
-          </div>
-
-          {/* 100% Risk Free Guarantee */}
-          <div className="mt-8 p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#1DB954]/10 text-[#1DB954] flex items-center justify-center shrink-0 border border-[#1DB954]/20">
-              <Shield className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="font-modern text-sm sm:text-base font-medium text-white">Garantía Incondicional de 7 Días</h4>
-              <p className="text-xs text-[#9ca3af] font-light mt-1 leading-relaxed">
-                Asiste a la primera hora del workshop en vivo. Si sientes que no aprendiste nada que transforme la claridad y el volumen de tus pistas, solo escríbenos un email y te devolvemos el 100% de tus $47 sin preguntas ni letra chica. Te quedas con la guía de frecuencias.
-              </p>
-            </div>
-          </div>
-
-          {/* THE HIGH-TICKET SEED // LA SEMILLA INVISIBLE */}
-          <div className="mt-8 p-8 rounded-3xl bg-gradient-to-b from-[#9D4EDD]/10 to-transparent border border-[#9D4EDD]/30 relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#9D4EDD]/15 blur-3xl pointer-events-none rounded-full"></div>
-            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <div className="w-12 h-12 rounded-2xl bg-[#9D4EDD]/20 border border-[#9D4EDD]/40 text-[#E0AAFF] flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(157,78,221,0.3)]">
-                <Sparkles className="w-6 h-6 text-[#E0AAFF]" />
+            {/* Opción 3: Binance Pay */}
+            {paymentTab === 'binance' && (
+              <div className="space-y-3">
+                <div className="bg-[#050505] p-3 rounded-xl border border-white/5 text-xs flex items-center justify-between gap-3">
+                  <div className="space-y-1 font-mono">
+                    <span className="text-[10px] text-[#6b7280] block">Binance Pay ID ({currentTotal} USDT)</span>
+                    <span className="text-white font-bold text-sm">93927162</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard('93927162', 'bn_id')}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 font-mono text-[10px] text-[#E0AAFF] flex items-center gap-1"
+                  >
+                    {copiedKey === 'bn_id' ? <CheckCheck className="w-3.5 h-3.5 text-[#1DB954]" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedKey === 'bn_id' ? 'Copiado' : 'Copiar ID'}</span>
+                  </button>
+                </div>
               </div>
-              <div className="space-y-2">
-                <span className="text-[9px] tracking-[0.35em] text-[#E0AAFF] uppercase font-mono font-semibold">
-                  [ CRITERIO PROFESIONAL // THE NEXT LEVEL ]
-                </span>
-                <p className="font-serif italic text-xl sm:text-2xl text-white font-normal leading-snug">
-                  "Aprender a medir te da el control para no arruinar tus temas. Pero entender la acústica avanzada es lo que te permite cobrar como profesional."
-                </p>
-                <p className="text-xs text-[#9ca3af] font-light leading-relaxed">
-                  La suite <strong className="text-white font-medium">CTRL</strong> automatiza la precisión técnica y algorítmica para que nunca más dudes en Spotify. En esta masterclass te enseñamos el criterio analítico de estudio para ejecutar como un ingeniero de primer nivel.
-                </p>
+            )}
+
+            {/* Opción 4: PayPal Directo */}
+            {paymentTab === 'paypal' && (
+              <div className="space-y-3">
+                <div className="bg-[#050505] p-3 rounded-xl border border-white/5 text-xs text-[#9ca3af] font-light">
+                  Transfiere los ${currentTotal} USD directamente a nuestro enlace oficial de PayPal:
+                </div>
+                <a
+                  href={PAYPAL_ME_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3 px-4 rounded-xl bg-[#0070ba] hover:bg-[#005ea6] text-white font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  <span>Abrir PayPal.me (${currentTotal})</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
+            )}
+
+            {/* Formulario Rápido de Confirmación (Solo si no es Gumroad) */}
+            {paymentTab !== 'gumroad' && (
+              <div className="mt-4 pt-3 border-t border-white/5">
+                {formStatus === 'success' ? (
+                  <div className="p-3 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/30 text-center font-mono text-xs text-[#1DB954]">
+                    ✓ Comprobante recibido. En breve recibirás tu acceso a {reportForm.email}.
+                  </div>
+                ) : (
+                  <form onSubmit={handleReportSubmit} className="space-y-2">
+                    <span className="text-[9px] font-mono text-[#6b7280] uppercase tracking-wider block">
+                      Notificar referencia del pago:
+                    </span>
+                    {errorMessage && (
+                      <div className="text-[11px] text-red-400 font-mono">{errorMessage}</div>
+                    )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Tu Nombre"
+                        value={reportForm.name}
+                        onChange={(e) => setReportForm({ ...reportForm, name: e.target.value })}
+                        className="bg-[#050505] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD]"
+                      />
+                      <input
+                        type="email"
+                        required
+                        placeholder="Tu Correo"
+                        value={reportForm.email}
+                        onChange={(e) => setReportForm({ ...reportForm, email: e.target.value })}
+                        className="bg-[#050505] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD]"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nº de Referencia / TxID"
+                      value={reportForm.reference}
+                      onChange={(e) => setReportForm({ ...reportForm, reference: e.target.value })}
+                      className="w-full bg-[#050505] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#9D4EDD]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={formStatus === 'sending'}
+                      className="w-full py-2.5 px-3 rounded-lg bg-[#9D4EDD] hover:bg-[#8338ec] text-white font-mono text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+                    >
+                      {formStatus === 'sending' ? 'Enviando...' : `Confirmar y Asegurar Cupo ($${currentTotal} USD)`}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-[#6b7280] font-mono">
+              <span className="flex items-center gap-1"><Lock className="w-3 h-3 text-[#1DB954]" /> Pago Seguro</span>
+              <span>Acceso Inmediato a CTRL</span>
             </div>
+
           </div>
 
         </div>
-      </section>
 
-      {/* ── FAQ INTERACTIVA ──────────────────────────── */}
-      <section className="py-20 px-6 md:px-12 border-t border-white/5 relative z-10">
-        <div className="max-w-2xl mx-auto">
-          
-          <div className="text-center mb-12">
-            <span className="text-[10px] tracking-[0.4em] text-[#9D4EDD] uppercase">04 // DESPEJANDO DUDAS</span>
-            <h2 className="font-modern text-2xl sm:text-4xl font-light text-white mt-1">
-              Preguntas Frecuentes
+        {/* ── FILTRO CLAVE: ¿PARA QUIÉN ES Y PARA QUIÉN NO? ── */}
+        <div className="mt-14 max-w-4xl mx-auto border-t border-white/5 pt-10">
+          <div className="text-center mb-6">
+            <span className="text-[10px] font-mono tracking-widest text-[#E0AAFF] uppercase font-bold">
+              CLARIDAD TOTAL // FILTRO DE ADMISIÓN
+            </span>
+            <h2 className="text-xl sm:text-2xl font-light text-white mt-1">
+              ¿Es este workshop para ti?
             </h2>
           </div>
 
-          <div className="space-y-3 font-mono">
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* SÍ ES PARA TI */}
+            <div className="p-5 rounded-2xl bg-[#1DB954]/[0.03] border border-[#1DB954]/20 space-y-3">
+              <div className="flex items-center gap-2 text-[#1DB954] text-xs font-mono font-bold uppercase tracking-wider">
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>Sí es para ti si:</span>
+              </div>
+              <ul className="space-y-2.5 text-xs text-[#d1d5db] font-light leading-relaxed">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#1DB954] font-bold">✓</span>
+                  <span>Produces o compones música en FL Studio y sientes que tus temas suenan "pequeños", opacos o pierden pegada al escucharlos en Spotify y en el auto.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#1DB954] font-bold">✓</span>
+                  <span>No eres ingeniero de sonido ni te interesa la física acústica aburrida: quieres entender los <strong>detalles prácticos</strong> explicados en lenguaje humano.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#1DB954] font-bold">✓</span>
+                  <span>Buscas un método claro para estructurar tu mixer, separar frecuencias y sonar comercial con los plugins de FL Studio + nuestra suite CTRL.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#1DB954] font-bold">✓</span>
+                  <span>Eres DJ y quieres entender más sobre producción y sonido para hacer tu propia música y lanzarla comercialmente.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* NO ES PARA TI */}
+            <div className="p-5 rounded-2xl bg-red-500/[0.02] border border-red-500/15 space-y-3">
+              <div className="flex items-center gap-2 text-red-400 text-xs font-mono font-bold uppercase tracking-wider">
+                <span className="w-4 h-4 rounded-full border border-red-400/40 flex items-center justify-center text-[10px] font-bold">✕</span>
+                <span>NO es para ti si:</span>
+              </div>
+              <ul className="space-y-2.5 text-xs text-[#9ca3af] font-light leading-relaxed">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold">×</span>
+                  <span>Eres un ingeniero de mastering veterano que busca debates teóricos de conservatorio o cálculos de acústica cuántica.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold">×</span>
+                  <span>Buscas "presets mágicos de 1 clic" que prometen resolver todo sin entender cómo equilibrar tu cadena de mezcla.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold">×</span>
+                  <span>No estás dispuesto a abrir FL Studio para practicar 2.5 horas enfocadas y aplicar mejoras reales a tus temas.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold">×</span>
+                  <span>No quieres sonar como un pro.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* ── FAQ COMPACTA (3 PREGUNTAS CLAVE) ── */}
+        <div className="mt-14 max-w-2xl mx-auto border-t border-white/5 pt-8">
+          <div className="text-center mb-6">
+            <span className="text-[10px] font-mono tracking-widest text-[#9D4EDD] uppercase">DUDAS RÁPIDAS</span>
+          </div>
+
+          <div className="space-y-2">
             {[
               {
-                q: "¿Qué pasa si no puedo asistir en vivo a esa hora?",
-                a: "No te quedas por fuera. Todo el evento se graba en resolución 4K y se carga en tu cuenta en menos de 24 horas con acceso de por vida."
+                q: "¿Qué pasa si no puedo estar conectado a esa hora?",
+                a: "No te preocupes. La sesión completa se graba en resolución 4K y se sube con acceso permanente de por vida en tu panel de alumno."
               },
               {
-                q: "¿Funciona si uso FL Studio, Ableton Live o Logic Pro?",
-                a: "Totalmente. Los principios psicoacústicos, el balance tonal, la gestión de fase y el medidor de LUFS son universales y aplican idéntico en cualquier DAW."
+                q: "¿Por qué en FL Studio y qué pasa si utilizo otro DAW (Ableton, Logic, Reaper)?",
+                a: "La sesión en vivo y el método de ruteo se construirán 100% dentro de FL Studio (utilizando su mixer y plugins stock). Los principios de separación espectral, acústica y medición con CTRL son universales y aplican idéntico en cualquier programa, pero si produces en FL Studio te llevarás el flujo de trabajo exacto y listo para aplicar."
               },
               {
-                q: "¿Cómo accedo a la suite CTRL?",
-                a: "Inmediatamente después de confirmar tu cupo recibirás un email con tu enlace y credenciales para usar CTRL desde hoy mismo."
-              },
-              {
-                q: "¿Necesito tener plugins caros de terceros?",
-                a: "No. Aprenderás a dominar la mezcla usando los plugins nativos (stock) de tu DAW combinados con las herramientas de medición analítica de CTRL."
-              },
-              {
-                q: "¿Cómo funcionará la auditoría de pistas durante el clinic en directo?",
-                a: "Durante el Clinic de Diagnóstico habilitaremos un enlace privado para subir tus tracks o stems .wav. Seleccionaremos casos representativos en pantalla compartida y los pasaremos por CTRL en tiempo real para diagnosticar y resolver problemas de fase, dinámica y frecuencias, extrayendo las notas exactas para que todos los asistentes puedan aplicarlas en sus propias mezclas esa misma noche."
+                q: "¿Cómo funciona la auditoría en directo?",
+                a: "Podrás postular tu tema antes del workshop. En vivo seleccionaremos 3–4 casos representativos con problemas comunes (graves que chocan, opacidad o exceso de limitación) para corregirlos en pantalla compartida; así todos aprenden a solucionar esos mismos fallos en sus pistas."
               }
             ].map((faq, idx) => (
-              <div 
-                key={idx} 
-                className="rounded-xl bg-white/[0.02] border border-white/5 overflow-hidden transition-colors hover:border-white/15"
-              >
+              <div key={idx} className="rounded-lg bg-white/[0.02] border border-white/5 overflow-hidden">
                 <button
+                  type="button"
                   onClick={() => toggleFaq(idx)}
-                  className="w-full py-4 px-5 text-left text-xs sm:text-sm text-white flex items-center justify-between hover:text-[#E0AAFF] transition-colors"
+                  className="w-full py-3 px-4 text-left text-xs text-white flex items-center justify-between hover:text-[#E0AAFF]"
                 >
-                  <span className="font-medium pr-4">{faq.q}</span>
-                  {openFaq === idx ? (
-                    <ChevronUp className="w-4 h-4 text-[#9D4EDD] shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-[#6b7280] shrink-0" />
-                  )}
+                  <span className="font-medium pr-2">{faq.q}</span>
+                  {openFaq === idx ? <ChevronUp className="w-3.5 h-3.5 text-[#9D4EDD]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#6b7280]" />}
                 </button>
                 {openFaq === idx && (
-                  <div className="px-5 pb-4 text-xs text-[#9ca3af] font-light leading-relaxed border-t border-white/5 pt-3">
+                  <div className="px-4 pb-3 text-xs text-[#9ca3af] font-light border-t border-white/5 pt-2">
                     {faq.a}
                   </div>
                 )}
@@ -993,20 +857,16 @@ export default function WorkshopSalesPage() {
             ))}
           </div>
         </div>
-      </section>
 
-      {/* ── FOOTER ESTILO NAPBAK ─────────────────────── */}
-      <footer className="border-t border-white/5 py-12 px-6 md:px-12 text-center text-[10px] text-[#6b7280] font-mono tracking-widest relative z-10">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-modern text-sm text-white font-light">napbak<span className="font-serif italic text-white/70">.studio</span></span>
-            <span>© 2026 // ALL RIGHTS RESERVED</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <a href="/" className="hover:text-white transition-colors">ESTUDIO</a>
-            <a href="/blog" className="hover:text-white transition-colors">BLOG</a>
-            <a href="https://ctrl.napbak.studio" target="_blank" rel="noreferrer" className="text-[#E0AAFF] hover:text-white transition-colors">CTRL APP ↗</a>
-          </div>
+      </main>
+
+      {/* Footer Minimalista */}
+      <footer className="border-t border-white/5 py-8 px-6 text-center text-[10px] text-[#6b7280] font-mono max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div>napbak.studio © 2026 // Todos los derechos reservados</div>
+        <div className="flex items-center gap-4">
+          <a href="/" className="hover:text-white">Estudio</a>
+          <a href="/blog" className="hover:text-white">Blog</a>
+          <a href="#checkout" className="text-[#E0AAFF] hover:text-white">Inscribirme ($47)</a>
         </div>
       </footer>
 

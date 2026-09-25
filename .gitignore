@@ -29,3 +29,6 @@ Napbak-CTRL/
 NapbakStudio-CTRL/
 *.webp
 vst/build/
+src/pages/WorkshopSalesPage.backup.jsx
+*.backup.*
+reviews_showcase.html
