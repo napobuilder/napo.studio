@@ -6,6 +6,7 @@ import TusasongDashboard from './pages/TusasongDashboard.jsx'
 import BlogList from './pages/BlogList.jsx'
 import BlogPost from './pages/BlogPost.jsx'
 import WorkshopSalesPage from './pages/WorkshopSalesPage.jsx'
+import DropLandingPage from './pages/DropLandingPage.jsx'
 
 function RootRouter() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -48,7 +49,12 @@ function RootRouter() {
     return <BlogList onNavigate={navigate} />;
   }
 
-  // 5. Main Soundscape / Studio Home (/)
+  // 5. Dark Synthwave Drop Landing (/drop o /next)
+  if (currentPath === '/drop' || currentPath === '/drop/' || currentPath === '/next' || currentPath === '/next/') {
+    return <DropLandingPage onNavigate={navigate} />;
+  }
+
+  // 6. Main Soundscape / Studio Home (/)
   return <App onNavigate={navigate} />;
 }
 

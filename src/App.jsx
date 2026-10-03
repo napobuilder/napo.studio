@@ -86,21 +86,24 @@ export default function App({ onNavigate }) {
           }
           try {
             const response = await fetch(urls[id]);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const arrayBuffer = await response.arrayBuffer();
             
-            const audioBuffer = await new Promise((resolve, reject) => {
-              globalAudioCtx.decodeAudioData(
-                arrayBuffer,
-                (buffer) => resolve(buffer),
-                (err) => reject(err)
-              );
+            // Usamos la API de Promise moderna con slice para evitar buffer detach issues
+            const audioBuffer = await globalAudioCtx.decodeAudioData(arrayBuffer.slice(0)).catch((err) => {
+              console.warn(`Web Audio codec fallback for ${id}:`, err);
+              return null;
             });
 
-            globalAudioBuffers[id] = audioBuffer;
+            if (audioBuffer) {
+              globalAudioBuffers[id] = audioBuffer;
+            }
             loadedCount++;
             setLoadingProgress(Math.round((loadedCount / stemIds.length) * 100));
           } catch (err) {
-            console.error(`Error loading ${id}:`, err);
+            console.warn(`Asset skipped ${id}:`, err);
+            loadedCount++;
+            setLoadingProgress(Math.round((loadedCount / stemIds.length) * 100));
           }
         }));
         
@@ -744,6 +747,10 @@ export default function App({ onNavigate }) {
               CTRL ANALYZER
             </a>
             <a href="#works" onClick={(e) => scrollTo(e, 'works')} className="hover:text-white transition-colors cursor-pointer">Selected Works</a>
+            <a href="/drop" onClick={(e) => handleNavigate(e, '/drop')} className="text-[#ec4899] hover:text-[#f472b6] transition-colors cursor-pointer flex items-center gap-1 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ec4899] shadow-[0_0_8px_rgba(236,72,153,0.9)] animate-ping"></span>
+              NEW DROP
+            </a>
             <a href="/blog" onClick={(e) => handleNavigate(e, '/blog')} className="hover:text-white transition-colors cursor-pointer">Blog</a>
           </div>
         </div>
