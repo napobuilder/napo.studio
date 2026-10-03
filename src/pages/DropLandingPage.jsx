@@ -37,6 +37,19 @@ export default function DropLandingPage({ onNavigate }) {
   const [subscribed, setSubscribed] = useState(false);
   const [emailError, setEmailError] = useState('');
 
+  // --- Audio Player State ---
+  const snippetAudioRef = useRef(null);
+  const [snippetPlaying, setSnippetPlaying] = useState(false);
+  const [snippetCurrentTime, setSnippetCurrentTime] = useState(0);
+  const [snippetDuration, setSnippetDuration] = useState(0);
+
+  // --- Download Gate State ---
+  const [showDownloadForm, setShowDownloadForm] = useState(false);
+  const [downloadEmail, setDownloadEmail] = useState('');
+  const [downloadSubmitting, setDownloadSubmitting] = useState(false);
+  const [downloadUnlocked, setDownloadUnlocked] = useState(false);
+  const [downloadEmailError, setDownloadEmailError] = useState('');
+
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -44,6 +57,8 @@ export default function DropLandingPage({ onNavigate }) {
     try {
       const saved = localStorage.getItem('napbak_drop_subscribed');
       if (saved) setSubscribed(true);
+      const dlSaved = localStorage.getItem('napbak_download_unlocked');
+      if (dlSaved) setDownloadUnlocked(true);
     } catch (e) {
       // Storage restriction fallback
     }
@@ -204,6 +219,13 @@ export default function DropLandingPage({ onNavigate }) {
     } else {
       window.location.href = path;
     }
+  };
+
+  const formatTime = (t) => {
+    if (!t || isNaN(t)) return '0:00';
+    const m = Math.floor(t / 60);
+    const s = Math.floor(t % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -416,105 +438,242 @@ export default function DropLandingPage({ onNavigate }) {
 
         {/* Minimalist Divider */}
         <div className="flex flex-col items-center gap-3 mb-16 opacity-40">
-          <span className="text-[9px] uppercase tracking-[0.4em] font-mono">The Drop Reel</span>
+          <span className="text-[9px] uppercase tracking-[0.4em] font-mono">Exclusive Preview</span>
           <div className="w-[1px] h-10 bg-gradient-to-b from-white/40 to-transparent"></div>
         </div>
 
-        {/* --- THE DROP REEL SECTION (INSTAGRAM EMBED) --- */}
-        <section id="reel" className="w-full max-w-4xl mx-auto mb-32 flex flex-col items-center">
+        {/* --- EXCLUSIVE PREVIEW + TRACK PROGRESS SECTION --- */}
+        <section id="preview" className="w-full max-w-3xl mx-auto mb-32 flex flex-col items-center">
           
-          <div className="text-center mb-8">
+          <div className="text-center mb-10">
             <span className="text-[10px] tracking-[0.5em] text-[#9D4EDD] uppercase font-mono block mb-2">
-              01. DROP PROTOTYPE REEL
+              01. EXCLUSIVE PREVIEW
             </span>
             <h3 className="font-modern text-3xl md:text-4xl text-white font-light tracking-tight">
-              The Drop Reel
+              Track 004 — Early Access
             </h3>
             <p className="font-mono text-xs text-[#9ca3af] mt-2">
-              Live studio capture and preview of the drop hook.
+              Listen to the work-in-progress. Download the snippet for free.
             </p>
           </div>
 
-          {/* MOBILE: Stylized card that links directly to Instagram (iframe doesn't work on mobile) */}
-          <a 
-            href="https://www.instagram.com/p/DeAk9bgvn-j/"
-            target="_blank"
-            rel="noreferrer"
-            className="md:hidden relative w-full max-w-[340px] rounded-3xl overflow-hidden border border-white/15 bg-[#09090b] reel-frame flex flex-col group"
-          >
-            {/* Dark synthwave gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#180b2a] via-[#09090b] to-[#040406]"></div>
-            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-56 h-56 bg-[#9D4EDD]/25 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-56 h-56 bg-[#ec4899]/20 rounded-full blur-3xl pointer-events-none"></div>
-
-            <div className="relative z-10 flex flex-col items-center justify-center py-16 px-6 gap-6">
+          {/* Track Progress Timeline */}
+          <div className="w-full max-w-xl mb-12 px-4">
+            <div className="relative flex items-center justify-between">
+              {/* Progress bar background */}
+              <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-white/10 -translate-y-1/2 rounded-full"></div>
+              {/* Progress bar filled */}
+              <div className="absolute top-1/2 left-0 h-[2px] bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] -translate-y-1/2 rounded-full" style={{ width: '62.5%' }}></div>
               
-              {/* Profile avatar */}
-              <div className="flex items-center gap-2.5 mb-2">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#9D4EDD] to-[#ec4899] p-[1.5px] flex items-center justify-center">
-                  <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
-                    <span className="font-modern text-xs text-white font-bold">N</span>
+              {[
+                { label: 'Writing', done: true },
+                { label: 'Arrangement', done: true },
+                { label: 'Mix', done: false, active: true },
+                { label: 'Master', done: false },
+                { label: 'Release', done: false },
+              ].map((stage, i) => (
+                <div key={i} className="relative z-10 flex flex-col items-center gap-2">
+                  <div className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
+                    stage.done 
+                      ? 'bg-[#9D4EDD] border-[#9D4EDD] shadow-lg shadow-[#9D4EDD]/40' 
+                      : stage.active 
+                        ? 'bg-[#09090b] border-[#ec4899] shadow-lg shadow-[#ec4899]/40 animate-pulse' 
+                        : 'bg-[#09090b] border-white/20'
+                  }`}>
+                    {stage.done && (
+                      <Check className="w-2.5 h-2.5 text-white" />
+                    )}
+                    {stage.active && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#ec4899]"></div>
+                    )}
+                  </div>
+                  <span className={`text-[8px] md:text-[9px] font-mono uppercase tracking-wider whitespace-nowrap ${
+                    stage.done ? 'text-[#E0AAFF]' : stage.active ? 'text-[#ec4899] font-semibold' : 'text-white/30'
+                  }`}>
+                    {stage.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Audio Player + Download Gate Card */}
+          <div className="w-full max-w-xl">
+            <div className="relative bg-[#08080a] border border-white/10 rounded-3xl p-6 md:p-8 overflow-hidden">
+              
+              {/* Background glow */}
+              <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#9D4EDD]/15 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-[#ec4899]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+              <div className="relative z-10">
+                {/* Track info */}
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#9D4EDD] to-[#ec4899] flex items-center justify-center shrink-0 shadow-lg shadow-[#9D4EDD]/30">
+                    <Waves className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-modern text-lg text-white font-medium">Dark Synthwave — 004</p>
+                    <p className="font-mono text-[10px] text-[#E0AAFF] tracking-wider mt-0.5">NAPBAK // WORK IN PROGRESS</p>
+                    <p className="font-mono text-[9px] text-white/30 mt-1">Exclusive snippet • Not on streaming yet</p>
                   </div>
                 </div>
-                <div className="text-left">
-                  <p className="font-modern text-sm text-white font-medium">napbak.studio</p>
-                  <p className="font-mono text-[8px] text-[#E0AAFF] tracking-wider">DROP 004 // MAKING IN PUBLIC</p>
+
+                {/* Custom Audio Player */}
+                <div className="mb-6">
+                  <audio 
+                    ref={snippetAudioRef} 
+                    src="/audio/napbak-dark-synthwave-004.mp3" 
+                    preload="metadata"
+                    onTimeUpdate={() => {
+                      if (snippetAudioRef.current) {
+                        setSnippetCurrentTime(snippetAudioRef.current.currentTime);
+                      }
+                    }}
+                    onLoadedMetadata={() => {
+                      if (snippetAudioRef.current) {
+                        setSnippetDuration(snippetAudioRef.current.duration);
+                      }
+                    }}
+                    onEnded={() => setSnippetPlaying(false)}
+                  />
+                  
+                  <div className="flex items-center gap-3">
+                    {/* Play/Pause */}
+                    <button
+                      onClick={() => {
+                        if (!snippetAudioRef.current) return;
+                        if (snippetPlaying) {
+                          snippetAudioRef.current.pause();
+                          setSnippetPlaying(false);
+                        } else {
+                          snippetAudioRef.current.play();
+                          setSnippetPlaying(true);
+                        }
+                      }}
+                      className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                    >
+                      {snippetPlaying ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                          <rect x="6" y="4" width="4" height="16" rx="1"/>
+                          <rect x="14" y="4" width="4" height="16" rx="1"/>
+                        </svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white" className="ml-0.5">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      )}
+                    </button>
+
+                    {/* Progress bar */}
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <div 
+                        className="w-full h-1.5 bg-white/10 rounded-full cursor-pointer group relative"
+                        onClick={(e) => {
+                          if (!snippetAudioRef.current || !snippetDuration) return;
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const x = e.clientX - rect.left;
+                          const pct = x / rect.width;
+                          snippetAudioRef.current.currentTime = pct * snippetDuration;
+                        }}
+                      >
+                        <div 
+                          className="h-full bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] rounded-full transition-all relative"
+                          style={{ width: snippetDuration ? `${(snippetCurrentTime / snippetDuration) * 100}%` : '0%' }}
+                        >
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-[8px] font-mono text-white/30">
+                        <span>{formatTime(snippetCurrentTime)}</span>
+                        <span>{formatTime(snippetDuration)}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Divider */}
+                <div className="w-full h-[1px] bg-white/10 mb-6"></div>
+
+                {/* Download Gate */}
+                {downloadUnlocked ? (
+                  <a
+                    href="/audio/napbak-dark-synthwave-004.mp3"
+                    download="Napbak - Dark Synthwave - 004.mp3"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] text-white font-mono text-xs uppercase tracking-widest font-semibold hover:opacity-90 transition-all active:scale-[0.98] shadow-lg shadow-[#9D4EDD]/30"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download Snippet
+                  </a>
+                ) : showDownloadForm ? (
+                  <form 
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!downloadEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(downloadEmail)) {
+                        setDownloadEmailError('Enter a valid email');
+                        return;
+                      }
+                      setDownloadSubmitting(true);
+                      setDownloadEmailError('');
+                      try {
+                        const res = await fetch('https://formspree.io/f/xjyknvry', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: downloadEmail, source: 'snippet_download_gate', track: '004' }),
+                        });
+                        if (res.ok) {
+                          setDownloadUnlocked(true);
+                          try { localStorage.setItem('napbak_download_unlocked', 'true'); } catch(err) {}
+                        } else {
+                          setDownloadEmailError('Something went wrong. Try again.');
+                        }
+                      } catch (err) {
+                        setDownloadEmailError('Connection error. Try again.');
+                      } finally {
+                        setDownloadSubmitting(false);
+                      }
+                    }}
+                    className="flex flex-col gap-3"
+                  >
+                    <p className="font-mono text-[10px] text-white/50 text-center">Enter your email to unlock the free download</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={downloadEmail}
+                        onChange={(e) => setDownloadEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="flex-1 bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-white text-xs font-mono placeholder:text-white/20 focus:outline-none focus:border-[#9D4EDD]/60 transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        disabled={downloadSubmitting}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] text-white font-mono text-xs uppercase tracking-wider font-semibold hover:opacity-90 transition-all disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {downloadSubmitting ? '...' : 'Unlock'}
+                      </button>
+                    </div>
+                    {downloadEmailError && (
+                      <p className="text-[10px] text-red-400 font-mono text-center">{downloadEmailError}</p>
+                    )}
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => setShowDownloadForm(true)}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/15 text-white font-mono text-xs uppercase tracking-widest hover:bg-white/10 hover:border-[#9D4EDD]/40 transition-all active:scale-[0.98] group"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#9D4EDD]">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span>Download Snippet</span>
+                    <span className="text-[8px] text-white/30 font-normal lowercase ml-1">— free with email</span>
+                  </button>
+                )}
               </div>
-
-              {/* Play icon */}
-              <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-all group-active:scale-95">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="white" className="ml-1">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </div>
-
-              <div className="text-center">
-                <p className="font-modern text-lg text-white font-medium tracking-wide">Watch the Drop Reel</p>
-                <p className="font-mono text-[10px] text-[#E0AAFF] tracking-widest mt-1">DARK SYNTHWAVE // LIVE SESSION</p>
-              </div>
-
-              {/* CTA pill */}
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] text-white text-xs font-mono uppercase tracking-wider font-semibold shadow-lg shadow-[#9D4EDD]/30">
-                <InstagramIcon className="w-4 h-4" />
-                <span>Open on Instagram</span>
-                <ExternalLink className="w-3 h-3" />
-              </div>
-
-              <p className="text-[9px] font-mono text-white/25 mt-1">Tap to play with full audio</p>
-            </div>
-          </a>
-
-          {/* DESKTOP: Instagram iframe embed (works fine on desktop browsers) */}
-          <div className="hidden md:flex relative w-full max-w-[420px] rounded-3xl overflow-hidden border border-white/15 bg-[#09090b] reel-frame p-3.5 flex-col justify-between">
-            
-            <div className="w-full h-[590px] rounded-2xl overflow-hidden bg-black relative flex items-center justify-center border border-white/5">
-              <iframe
-                src="https://www.instagram.com/p/DeAk9bgvn-j/embed/"
-                className="w-full h-full border-0 rounded-2xl"
-                scrolling="no"
-                allowtransparency="true"
-                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                title="Napbak Drop Reel on Instagram"
-              ></iframe>
-            </div>
-
-            <div className="pt-3 px-1 flex items-center justify-between gap-3">
-              <div className="text-left shrink-0">
-                <p className="font-modern text-xs text-white">@napbak.studio</p>
-                <p className="font-mono text-[9px] text-[#E0AAFF]">Drop 004 // Making In Public</p>
-              </div>
-
-              <a
-                href="https://www.instagram.com/p/DeAk9bgvn-j/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] hover:from-[#E0AAFF] hover:to-[#f472b6] text-white hover:text-black transition-all text-[9px] font-mono uppercase tracking-wider font-semibold shadow-lg shadow-[#9D4EDD]/20 whitespace-nowrap"
-              >
-                <InstagramIcon className="w-3.5 h-3.5" />
-                <span>Watch with Audio</span>
-                <ExternalLink className="w-2.5 h-2.5" />
-              </a>
             </div>
           </div>
 
