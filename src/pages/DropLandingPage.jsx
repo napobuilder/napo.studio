@@ -435,10 +435,60 @@ export default function DropLandingPage({ onNavigate }) {
             </p>
           </div>
 
-          {/* Instagram Reel Container */}
-          <div className="relative w-full max-w-[340px] md:max-w-[420px] rounded-3xl overflow-hidden border border-white/15 bg-[#09090b] reel-frame p-3.5 flex flex-col justify-between">
+          {/* MOBILE: Stylized card that links directly to Instagram (iframe doesn't work on mobile) */}
+          <a 
+            href="https://www.instagram.com/p/DeAk9bgvn-j/"
+            target="_blank"
+            rel="noreferrer"
+            className="md:hidden relative w-full max-w-[340px] rounded-3xl overflow-hidden border border-white/15 bg-[#09090b] reel-frame flex flex-col group"
+          >
+            {/* Dark synthwave gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#180b2a] via-[#09090b] to-[#040406]"></div>
+            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-56 h-56 bg-[#9D4EDD]/25 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-56 h-56 bg-[#ec4899]/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="relative z-10 flex flex-col items-center justify-center py-16 px-6 gap-6">
+              
+              {/* Profile avatar */}
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#9D4EDD] to-[#ec4899] p-[1.5px] flex items-center justify-center">
+                  <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
+                    <span className="font-modern text-xs text-white font-bold">N</span>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <p className="font-modern text-sm text-white font-medium">napbak.studio</p>
+                  <p className="font-mono text-[8px] text-[#E0AAFF] tracking-wider">DROP 004 // MAKING IN PUBLIC</p>
+                </div>
+              </div>
+
+              {/* Play icon */}
+              <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-all group-active:scale-95">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white" className="ml-1">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+
+              <div className="text-center">
+                <p className="font-modern text-lg text-white font-medium tracking-wide">Watch the Drop Reel</p>
+                <p className="font-mono text-[10px] text-[#E0AAFF] tracking-widest mt-1">DARK SYNTHWAVE // LIVE SESSION</p>
+              </div>
+
+              {/* CTA pill */}
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] text-white text-xs font-mono uppercase tracking-wider font-semibold shadow-lg shadow-[#9D4EDD]/30">
+                <InstagramIcon className="w-4 h-4" />
+                <span>Open on Instagram</span>
+                <ExternalLink className="w-3 h-3" />
+              </div>
+
+              <p className="text-[9px] font-mono text-white/25 mt-1">Tap to play with full audio</p>
+            </div>
+          </a>
+
+          {/* DESKTOP: Instagram iframe embed (works fine on desktop browsers) */}
+          <div className="hidden md:flex relative w-full max-w-[420px] rounded-3xl overflow-hidden border border-white/15 bg-[#09090b] reel-frame p-3.5 flex-col justify-between">
             
-            <div className="w-full h-[520px] md:h-[590px] rounded-2xl overflow-hidden bg-black relative flex items-center justify-center border border-white/5">
+            <div className="w-full h-[590px] rounded-2xl overflow-hidden bg-black relative flex items-center justify-center border border-white/5">
               <iframe
                 src="https://www.instagram.com/p/DeAk9bgvn-j/embed/"
                 className="w-full h-full border-0 rounded-2xl"
@@ -449,31 +499,22 @@ export default function DropLandingPage({ onNavigate }) {
               ></iframe>
             </div>
 
-            {/* Footer with prominent CTA */}
-            <div className="pt-3 px-1 flex flex-col gap-3">
-              
-              {/* Mobile audio hint */}
-              <p className="text-[9px] font-mono text-white/30 text-center md:hidden">
-                Tap below to watch with full audio on Instagram ↓
-              </p>
-
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-left shrink-0">
-                  <p className="font-modern text-xs text-white">@napbak.studio</p>
-                  <p className="font-mono text-[9px] text-[#E0AAFF]">Drop 004 // Making In Public</p>
-                </div>
-
-                <a
-                  href="https://www.instagram.com/p/DeAk9bgvn-j/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] hover:from-[#E0AAFF] hover:to-[#f472b6] text-white hover:text-black transition-all text-[9px] font-mono uppercase tracking-wider font-semibold shadow-lg shadow-[#9D4EDD]/20 whitespace-nowrap"
-                >
-                  <InstagramIcon className="w-3.5 h-3.5" />
-                  <span>Watch with Audio</span>
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </a>
+            <div className="pt-3 px-1 flex items-center justify-between gap-3">
+              <div className="text-left shrink-0">
+                <p className="font-modern text-xs text-white">@napbak.studio</p>
+                <p className="font-mono text-[9px] text-[#E0AAFF]">Drop 004 // Making In Public</p>
               </div>
+
+              <a
+                href="https://www.instagram.com/p/DeAk9bgvn-j/"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] hover:from-[#E0AAFF] hover:to-[#f472b6] text-white hover:text-black transition-all text-[9px] font-mono uppercase tracking-wider font-semibold shadow-lg shadow-[#9D4EDD]/20 whitespace-nowrap"
+              >
+                <InstagramIcon className="w-3.5 h-3.5" />
+                <span>Watch with Audio</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
             </div>
           </div>
 
