@@ -449,22 +449,31 @@ export default function DropLandingPage({ onNavigate }) {
               ></iframe>
             </div>
 
-            <div className="pt-3 px-2 flex items-center justify-between">
-              <div className="text-left">
-                <p className="font-modern text-xs text-white">@napbak.studio</p>
-                <p className="font-mono text-[9px] text-[#E0AAFF]">Drop 004 // Making In Public</p>
-              </div>
+            {/* Footer with prominent CTA */}
+            <div className="pt-3 px-1 flex flex-col gap-3">
+              
+              {/* Mobile audio hint */}
+              <p className="text-[9px] font-mono text-white/30 text-center md:hidden">
+                Tap below to watch with full audio on Instagram ↓
+              </p>
 
-              <a
-                href="https://www.instagram.com/p/DeAk9bgvn-j/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all text-[9px] font-mono uppercase tracking-wider"
-              >
-                <InstagramIcon className="w-3 h-3 text-[#ec4899]" />
-                <span>Watch on Instagram</span>
-                <ExternalLink className="w-2.5 h-2.5" />
-              </a>
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-left shrink-0">
+                  <p className="font-modern text-xs text-white">@napbak.studio</p>
+                  <p className="font-mono text-[9px] text-[#E0AAFF]">Drop 004 // Making In Public</p>
+                </div>
+
+                <a
+                  href="https://www.instagram.com/p/DeAk9bgvn-j/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] hover:from-[#E0AAFF] hover:to-[#f472b6] text-white hover:text-black transition-all text-[9px] font-mono uppercase tracking-wider font-semibold shadow-lg shadow-[#9D4EDD]/20 whitespace-nowrap"
+                >
+                  <InstagramIcon className="w-3.5 h-3.5" />
+                  <span>Watch with Audio</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
             </div>
           </div>
 
