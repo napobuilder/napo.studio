@@ -43,6 +43,13 @@ export default function DropLandingPage({ onNavigate }) {
   const [snippetCurrentTime, setSnippetCurrentTime] = useState(0);
   const [snippetDuration, setSnippetDuration] = useState(0);
 
+  // --- Audio Visualizer Refs ---
+  const vizCanvasRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const analyserRef = useRef(null);
+  const sourceRef = useRef(null);
+  const vizAnimRef = useRef(null);
+
   // --- Download Gate State ---
   const [showDownloadForm, setShowDownloadForm] = useState(false);
   const [downloadEmail, setDownloadEmail] = useState('');
@@ -220,6 +227,109 @@ export default function DropLandingPage({ onNavigate }) {
       window.location.href = path;
     }
   };
+
+  // --- Audio Visualizer Functions ---
+  const initVisualizer = () => {
+    if (audioCtxRef.current || !snippetAudioRef.current) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      const source = ctx.createMediaElementSource(snippetAudioRef.current);
+      source.connect(analyser);
+      analyser.connect(ctx.destination);
+      audioCtxRef.current = ctx;
+      analyserRef.current = analyser;
+      sourceRef.current = source;
+    } catch (e) {
+      console.warn('Visualizer init failed:', e);
+    }
+  };
+
+  const drawViz = () => {
+    const canvas = vizCanvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    const W = rect.width;
+    const H = rect.height;
+
+    ctx.clearRect(0, 0, W, H);
+
+    if (!analyser) {
+      // Draw idle waveform (subtle static bars)
+      const barCount = 48;
+      const gap = 2;
+      const barW = (W - (barCount - 1) * gap) / barCount;
+      for (let i = 0; i < barCount; i++) {
+        const x = i * (barW + gap);
+        const h = 3 + Math.sin(i * 0.3 + Date.now() * 0.002) * 2;
+        const grad = ctx.createLinearGradient(x, H / 2 - h, x, H / 2 + h);
+        grad.addColorStop(0, 'rgba(157, 78, 221, 0.3)');
+        grad.addColorStop(1, 'rgba(236, 72, 153, 0.15)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.roundRect(x, H / 2 - h, barW, h * 2, 1);
+        ctx.fill();
+      }
+      vizAnimRef.current = requestAnimationFrame(drawViz);
+      return;
+    }
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(dataArray);
+
+    const barCount = 48;
+    const gap = 2;
+    const barW = (W - (barCount - 1) * gap) / barCount;
+    const step = Math.floor(bufferLength / barCount);
+
+    for (let i = 0; i < barCount; i++) {
+      const raw = dataArray[i * step] || 0;
+      const norm = raw / 255;
+      const minH = 2;
+      const maxH = H * 0.45;
+      const h = minH + norm * (maxH - minH);
+      const x = i * (barW + gap);
+      const y = H / 2;
+
+      // Gradient bar
+      const grad = ctx.createLinearGradient(x, y - h, x, y + h);
+      grad.addColorStop(0, `rgba(157, 78, 221, ${0.5 + norm * 0.5})`);
+      grad.addColorStop(0.5, `rgba(224, 170, 255, ${0.3 + norm * 0.5})`);
+      grad.addColorStop(1, `rgba(236, 72, 153, ${0.4 + norm * 0.4})`);
+
+      // Glow
+      ctx.shadowColor = norm > 0.5 ? 'rgba(157, 78, 221, 0.6)' : 'transparent';
+      ctx.shadowBlur = norm > 0.5 ? 8 : 0;
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x, y - h, barW, h * 2, barW / 2);
+      ctx.fill();
+    }
+
+    ctx.shadowBlur = 0;
+    vizAnimRef.current = requestAnimationFrame(drawViz);
+  };
+
+  useEffect(() => {
+    // Start idle animation
+    drawViz();
+    return () => {
+      if (vizAnimRef.current) cancelAnimationFrame(vizAnimRef.current);
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        try { audioCtxRef.current.close(); } catch(e) {}
+      }
+    };
+  }, []);
 
   const formatTime = (t) => {
     if (!t || isNaN(t)) return '0:00';
@@ -518,12 +628,13 @@ export default function DropLandingPage({ onNavigate }) {
                   </div>
                 </div>
 
-                {/* Custom Audio Player */}
+                {/* Custom Audio Player with Visualizer */}
                 <div className="mb-6">
                   <audio 
                     ref={snippetAudioRef} 
                     src="/audio/napbak-dark-synthwave-004.mp3" 
                     preload="metadata"
+                    crossOrigin="anonymous"
                     onTimeUpdate={() => {
                       if (snippetAudioRef.current) {
                         setSnippetCurrentTime(snippetAudioRef.current.currentTime);
@@ -537,11 +648,23 @@ export default function DropLandingPage({ onNavigate }) {
                     onEnded={() => setSnippetPlaying(false)}
                   />
                   
+                  {/* Waveform Visualizer */}
+                  <div className="relative w-full h-24 md:h-28 mb-4 rounded-xl overflow-hidden bg-white/[0.02] border border-white/5">
+                    <canvas 
+                      ref={vizCanvasRef}
+                      className="w-full h-full"
+                      style={{ display: 'block' }}
+                    />
+                    {/* Subtle overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#08080a]/60 via-transparent to-[#08080a]/40 pointer-events-none"></div>
+                  </div>
+
                   <div className="flex items-center gap-3">
                     {/* Play/Pause */}
                     <button
                       onClick={() => {
                         if (!snippetAudioRef.current) return;
+                        initVisualizer();
                         if (snippetPlaying) {
                           snippetAudioRef.current.pause();
                           setSnippetPlaying(false);
@@ -550,15 +673,15 @@ export default function DropLandingPage({ onNavigate }) {
                           setSnippetPlaying(true);
                         }
                       }}
-                      className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                      className="w-12 h-12 rounded-full bg-gradient-to-br from-[#9D4EDD]/30 to-[#ec4899]/20 hover:from-[#9D4EDD]/50 hover:to-[#ec4899]/30 border border-white/15 flex items-center justify-center transition-all active:scale-95 shrink-0 shadow-lg shadow-[#9D4EDD]/10"
                     >
                       {snippetPlaying ? (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
                           <rect x="6" y="4" width="4" height="16" rx="1"/>
                           <rect x="14" y="4" width="4" height="16" rx="1"/>
                         </svg>
                       ) : (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white" className="ml-0.5">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="white" className="ml-0.5">
                           <path d="M8 5v14l11-7z"/>
                         </svg>
                       )}
@@ -580,7 +703,7 @@ export default function DropLandingPage({ onNavigate }) {
                           className="h-full bg-gradient-to-r from-[#9D4EDD] to-[#ec4899] rounded-full transition-all relative"
                           style={{ width: snippetDuration ? `${(snippetCurrentTime / snippetDuration) * 100}%` : '0%' }}
                         >
-                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-md shadow-[#9D4EDD]/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
                       </div>
                       <div className="flex justify-between text-[8px] font-mono text-white/30">
