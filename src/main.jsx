@@ -7,6 +7,8 @@ import BlogList from './pages/BlogList.jsx'
 import BlogPost from './pages/BlogPost.jsx'
 import WorkshopSalesPage from './pages/WorkshopSalesPage.jsx'
 import DropLandingPage from './pages/DropLandingPage.jsx'
+import MasteringSalesPage from './pages/MasteringSalesPage.jsx'
+import StudioDiaryPage from './pages/StudioDiaryPage.jsx'
 
 function RootRouter() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -49,12 +51,22 @@ function RootRouter() {
     return <BlogList onNavigate={navigate} />;
   }
 
-  // 5. Dark Synthwave Drop Landing (/drop o /next)
-  if (currentPath === '/drop' || currentPath === '/drop/' || currentPath === '/next' || currentPath === '/next/') {
+  // 5. Studio Diary Page (/diary o /studio-diary)
+  if (currentPath === '/diary' || currentPath === '/diary/' || currentPath === '/studio-diary' || currentPath === '/studio-diary/') {
+    return <StudioDiaryPage onNavigate={navigate} />;
+  }
+
+  // 6. Links HUB (/links o /drop o /next)
+  if (currentPath === '/links' || currentPath === '/links/' || currentPath === '/drop' || currentPath === '/drop/' || currentPath === '/next' || currentPath === '/next/') {
     return <DropLandingPage onNavigate={navigate} />;
   }
 
-  // 6. Main Soundscape / Studio Home (/)
+  // 7. Week Mastering Promo Page (/mastering)
+  if (currentPath === '/mastering' || currentPath === '/mastering/') {
+    return <MasteringSalesPage onNavigate={navigate} />;
+  }
+
+  // 7. Main Soundscape / Studio Home (/)
   return <App onNavigate={navigate} />;
 }
 
