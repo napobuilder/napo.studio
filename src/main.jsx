@@ -9,6 +9,7 @@ import WorkshopSalesPage from './pages/WorkshopSalesPage.jsx'
 import DropLandingPage from './pages/DropLandingPage.jsx'
 import MasteringSalesPage from './pages/MasteringSalesPage.jsx'
 import StudioDiaryPage from './pages/StudioDiaryPage.jsx'
+import NemesisKitPage from './pages/NemesisKitPage.jsx'
 
 function RootRouter() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -64,6 +65,11 @@ function RootRouter() {
   // 7. Week Mastering Promo Page (/mastering)
   if (currentPath === '/mastering' || currentPath === '/mastering/') {
     return <MasteringSalesPage onNavigate={navigate} />;
+  }
+
+  // 8. "NEMESIS" Dark Synthwave Kit Landing (/nemesis o /nemesis-kit)
+  if (currentPath === '/nemesis' || currentPath === '/nemesis/' || currentPath === '/nemesis-kit' || currentPath === '/nemesis-kit/') {
+    return <NemesisKitPage onNavigate={navigate} />;
   }
 
   // 7. Main Soundscape / Studio Home (/)

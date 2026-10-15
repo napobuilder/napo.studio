@@ -4,9 +4,17 @@
   <!-- Home -->
   <url>
     <loc>https://napbak.studio/</loc>
-    <lastmod>2026-09-19</lastmod>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+  </url>
+
+  <!-- NEMESIS Dark Synthwave Kit Landing -->
+  <url>
+    <loc>https://napbak.studio/nemesis</loc>
+    <lastmod>2026-10-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
   </url>
 
   <!-- Blog index -->

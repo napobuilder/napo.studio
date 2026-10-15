@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  ArrowRight, ExternalLink, Sliders, Share2, Check
+  ArrowRight, ExternalLink, Sliders, Share2, Check, Zap
 } from 'lucide-react';
 
 // --- Brand Social & Verified Icons ---
@@ -334,6 +334,87 @@ export default function DropLandingPage({ onNavigate }) {
         {/* 2. OFFICIAL LINKS (Direct Touch Cards)                    */}
         {/* ========================================================= */}
         <div className="w-full flex flex-col gap-3.5">
+
+          {/* ⚡ FEATURED HERO DROP: "NEMESIS" Dark Synthwave FLP & Loop Kit */}
+          <div className="w-full rounded-2xl sm:rounded-3xl border border-[#ec4899]/50 hover:border-[#ec4899] bg-gradient-to-b from-[#240d2b]/95 via-[#0e0714]/95 to-[#07070a] backdrop-blur-xl link-card-glow transition-all duration-300 p-3.5 sm:p-4.5 relative overflow-hidden group shadow-[0_10px_35px_-10px_rgba(236,72,153,0.35)]">
+            
+            {/* Ambient Corner Glow */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#ec4899]/15 blur-2xl pointer-events-none rounded-full"></div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 relative z-10">
+              
+              {/* Product Info with Cover Thumbnail */}
+              <div 
+                onClick={(e) => navigateTo(e, '/nemesis')}
+                className="flex items-center gap-3.5 min-w-0 cursor-pointer"
+              >
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden border border-[#ec4899]/50 shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-300 bg-black">
+                  <img
+                    src="/nemesis-cover.jpg"
+                    alt="NEMESIS Kit"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                    <span className="text-[9px] font-mono font-bold tracking-wider text-white uppercase bg-gradient-to-r from-[#ec4899] to-[#9D4EDD] px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                      <Zap className="w-2.5 h-2.5 fill-white" />
+                      <span>LAUNCH SPECIAL • 53% OFF</span>
+                    </span>
+                    <span className="text-[8px] font-mono text-white/50 bg-white/5 px-1.5 py-0.5 rounded">
+                      155 BPM
+                    </span>
+                  </div>
+
+                  <h3 className="font-modern text-white font-bold text-sm sm:text-base leading-snug truncate group-hover:text-[#f472b6] transition-colors">
+                    "NEMESIS" — FLP & Loop Kit
+                  </h3>
+                  <p className="font-mono text-[10px] text-white/60 truncate mt-0.5">
+                    Official FL Studio Project + 100% Royalty-Free WAV Loops
+                  </p>
+                </div>
+              </div>
+
+              {/* Price & Action Buttons */}
+              <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                
+                {/* Price Tag */}
+                <div className="flex items-baseline gap-1">
+                  <span className="text-sm sm:text-base font-mono font-extrabold text-emerald-400">
+                    $7.00
+                  </span>
+                  <span className="line-through text-white/40 text-[10px] font-mono">
+                    $15.00
+                  </span>
+                </div>
+
+                {/* Direct Action Buttons */}
+                <div className="flex items-center gap-1.5">
+                  <a
+                    href="/nemesis"
+                    onClick={(e) => navigateTo(e, '/nemesis')}
+                    className="text-[10px] font-mono tracking-wider font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-full transition-all cursor-pointer"
+                  >
+                    Demo
+                  </a>
+
+                  <a
+                    href="https://payhip.com/b/c0hzb"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-modern tracking-wider font-bold text-white bg-gradient-to-r from-[#ec4899] to-[#9D4EDD] hover:brightness-110 px-3.5 py-1.5 rounded-full shadow-md shadow-[#ec4899]/30 flex items-center gap-1 transition-all active:scale-95"
+                  >
+                    <span>Get Kit</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
 
           {/* 1. 🎛 Mixing & mastering — from $70 */}
           <a
